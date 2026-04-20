@@ -1,0 +1,24 @@
+*.o
+*.obj
+*.elf
+*.bin
+*.hex
+*.map
+*.lst
+*.d
+*.axf
+*.iex
+*.dep
+*.dbg
+*.crf
+*.htm
+*.lnp
+*.sct
+*.log
+*.log.lock
+
+# IDE specific files
+*.uvgui.*
+*.uvguix.*
+
+
