@@ -9,9 +9,13 @@
 #include "stdio.h"
 #include "string.h"
 
-#include "delay.h"
 #include "bsp_usart.h"
 #include "bsp_iic.h"
+
+#include "delay.h"
+#include "bsp_AT24C02.h"
+
+void Bsp_Init(void);
 
 extern UCB_CB U0CB;
 extern uint8_t USART1_RxBuf[U1_RX_SIZE];
