@@ -5,8 +5,13 @@ void IIC_Init(void)
     GPIO_InitTypeDef GPIO_InitStructure;
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
 	
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_Init(GPIOB, &GPIO_InitStructure);
+
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_OD;
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6 | GPIO_Pin_7;
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_7;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(GPIOB, &GPIO_InitStructure);
     /*IIC初始化要求SCL和SDA置高*/
@@ -28,10 +33,12 @@ void IIC_Start(void)
 
 void IIC_Stop(void)
 {
-    IIC_SCL_H;
     IIC_SDA_L;
     Delay_us(2);
+    IIC_SCL_H;
+    Delay_us(2);
     IIC_SDA_H;
+    Delay_us(2);
 }
 
 void IIC_Send_Byte(uint8_t txd)
@@ -84,6 +91,7 @@ uint8_t IIC_Read_Byte(uint8_t ack)
         IIC_SCL_L;
         Delay_us(2);
         IIC_SCL_H;
+        Delay_us(2);
         if(READ_SDA)
         {
             rxd |= BIT(i);

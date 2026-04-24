@@ -32,7 +32,9 @@ uint8_t AT24C02_WritePage(uint8_t addr, uint8_t *wdata)
 
 uint8_t AT24C02_ReadData(uint8_t addr, uint8_t *rdata, uint16_t datalen)
 {
-    uint8_t i;
+    uint16_t i;
+    if(datalen == 0) return 0;
+
     IIC_Start();
     IIC_Send_Byte(AT24C02_WADDR);
     if(IIC_wait_Ack(100) != 0) return 1;
