@@ -435,6 +435,16 @@
               <FilePath>.\BSP\Src\bsp_iic.c</FilePath>
             </File>
             <File>
+              <FileName>bsp_spi.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\BSP\Src\bsp_spi.c</FilePath>
+            </File>
+            <File>
+              <FileName>bsp_w25q64.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\BSP\Src\bsp_w25q64.c</FilePath>
+            </File>
+            <File>
               <FileName>bsp_AT24C02.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\BSP\Src\bsp_AT24C02.c</FilePath>

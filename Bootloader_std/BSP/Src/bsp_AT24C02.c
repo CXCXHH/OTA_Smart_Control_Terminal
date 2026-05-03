@@ -1,4 +1,5 @@
 #include "bsp.h"
+#include "bsp_AT24C02.h"
 
 uint8_t AT24C02_WriteByte(uint8_t addr, uint8_t wdata)
 {

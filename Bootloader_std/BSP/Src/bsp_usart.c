@@ -1,4 +1,5 @@
 #include "bsp.h"
+#include "bsp_usart.h"
 
 uint8_t USART1_RxBuf[U1_RX_SIZE];
 uint8_t USART1_TxBuf[U1_TX_SIZE];

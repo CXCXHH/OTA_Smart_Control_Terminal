@@ -1,4 +1,5 @@
 #include "bsp.h"
+#include "bsp_iic.h"
 
 void IIC_Init(void)
 {
