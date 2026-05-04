@@ -16,6 +16,7 @@
 
 #include "delay.h"
 #include "bsp_AT24C02.h"
+#include "bsp_flash.h"
 
 void Bsp_Init(void);
 
