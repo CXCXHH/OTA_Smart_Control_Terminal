@@ -52,3 +52,9 @@ uint8_t AT24C02_ReadData(uint8_t addr, uint8_t *rdata, uint16_t datalen)
     IIC_Stop();
     return 0;
 }
+
+void M24C02_ReadOTAInfo(void)
+{
+    memset(&OTA_Info, 0, OTA_INFOCB_SIZE);
+    AT24C02_ReadData(0, (uint8_t *)&OTA_Info, OTA_INFOCB_SIZE);
+}

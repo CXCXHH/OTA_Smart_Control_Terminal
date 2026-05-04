@@ -95,5 +95,5 @@ void U1_printf(char *format, ...)
 		while(USART_GetFlagStatus(USART1, USART_FLAG_TXE) != 1);
 		USART_SendData(USART1, USART1_TxBuf[i]);
 	}
-	while(USART_GetFlagStatus(USART1, USART_FLAG_TXE) != 1);
+	while(USART_GetFlagStatus(USART1, USART_FLAG_TC) != 1);
 }

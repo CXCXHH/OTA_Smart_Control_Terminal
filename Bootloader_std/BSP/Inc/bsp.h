@@ -9,12 +9,13 @@
 #include "stdio.h"
 #include "string.h"
 
+#include "main.h"
+#include "delay.h"
+
 #include "bsp_usart.h"
 #include "bsp_iic.h"
 #include "bsp_spi.h"
 #include "bsp_w25q64.h"
-
-#include "delay.h"
 #include "bsp_AT24C02.h"
 #include "bsp_flash.h"
 
