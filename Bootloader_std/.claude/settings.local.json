@@ -1,7 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(python \"C:\\\\Users\\\\m1511\\\\.claude\\\\skills\\\\build-keil\\\\scripts\\\\keil_builder.py\" --detect --project \"e:\\\\STM32_Project\\\\STM32F103C8T6\\\\Bootloader_std\\\\project.uvprojx\" --verbose)"
-    ]
-  }
-}

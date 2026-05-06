@@ -1,0 +1,36 @@
+# ===== Build artifacts (Keil MDK) =====
+*.o
+*.obj
+*.elf
+*.bin
+*.hex
+*.map
+*.lst
+*.d
+*.axf
+*.iex
+*.dep
+*.crf
+*.htm
+*.lnp
+*.log
+*.log.lock
+*.scvd
+*.dbgconf
+
+# Keil IDE user-local files
+*.uvgui.*
+*.uvguix.*
+*.uvoptx
+project.uvprojx
+
+# Build output directories
+**/Objects/
+**/Listings/
+
+# ===== IDE / Tooling =====
+.claude/
+.vscode/
+
+# ===== Backup =====
+Bootloader_std_backup/
