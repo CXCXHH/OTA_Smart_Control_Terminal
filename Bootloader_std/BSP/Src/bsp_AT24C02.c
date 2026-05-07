@@ -53,8 +53,18 @@ uint8_t AT24C02_ReadData(uint8_t addr, uint8_t *rdata, uint16_t datalen)
     return 0;
 }
 
-void M24C02_ReadOTAInfo(void)
+void AT24C02_ReadOTAInfo(void)
 {
     memset(&OTA_Info, 0, OTA_INFOCB_SIZE);
     AT24C02_ReadData(0, (uint8_t *)&OTA_Info, OTA_INFOCB_SIZE);
+}
+
+void AT24C02_WriteOTAInfo(void)
+{
+    uint8_t i;
+    for(i=0;i<OTA_INFOCB_SIZE/16;i++)
+    {
+        AT24C02_WritePage(i*16, (uint8_t *)&OTA_Info+i*16);
+        Delay_ms(5);
+    }
 }
