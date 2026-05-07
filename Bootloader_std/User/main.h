@@ -8,6 +8,8 @@
 #include "boot.h"
 
 #define OTA_SET_FLAG    0xAABB1122
+#define UPDATA_A_FLAG   0x00000001
+
 typedef struct 
 {
     uint32_t OTA_FLAG;
@@ -23,4 +25,5 @@ typedef struct
 
 extern OTA_InfoCB OTA_Info;
 extern UpDataA_CB UpDataA;
+extern uint32_t BootStaFlag;
 #endif

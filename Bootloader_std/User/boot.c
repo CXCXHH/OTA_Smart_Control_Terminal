@@ -12,6 +12,8 @@ void BootLoader_Brance(void)
     if(OTA_Info.OTA_FLAG == OTA_SET_FLAG)
     {
         U1_printf("OTA YES!\r\n");       // 有标记 → 待实现 OTA 接收
+        BootStaFlag |= UPDATA_A_FLAG;
+        UpDataA.W25Q64_BlockNB = 0;
     }
     else
     {
