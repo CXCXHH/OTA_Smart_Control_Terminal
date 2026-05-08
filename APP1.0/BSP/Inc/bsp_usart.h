@@ -25,9 +25,6 @@ typedef struct
     UCB_URxBuffptr *URxDataEND;     /* 队列尾指针 */
 } UCB_CB;
 
-extern uint8_t USART1_RxBuf[U1_RX_SIZE];
-extern uint8_t USART1_TxBuf[U1_TX_SIZE];
-extern UCB_CB U0CB;
 
 void Usart1_Init(uint32_t bandrate);
 void U1Rx_PtrInit(void);

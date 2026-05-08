@@ -9,17 +9,52 @@ load_a load_A;
 //===========================================================================
 void BootLoader_Brance(void)
 {
-    if(OTA_Info.OTA_FLAG == OTA_SET_FLAG)
+    if(BootLoader_Enter(20) == 0)
     {
-        U1_printf("OTA YES!\r\n");       // 有标记 → 待实现 OTA 接收
-        BootStaFlag |= UPDATA_A_FLAG;
-        UpDataA.W25Q64_BlockNB = 0;
+        if(OTA_Info.OTA_FLAG == OTA_SET_FLAG)
+        {
+            U1_printf("OTA YES!\r\n");       // 有标记 → 待实现 OTA 接收
+            BootStaFlag |= UPDATA_A_FLAG;
+            UpDataA.W25Q64_BlockNB = 0;
+        }
+        else
+        {
+            U1_printf("OTA GO A!\r\n");
+            LOAD_A(STM32_A_START_ADDR);      // 无标记 → 直接跳 A 区
+        }
     }
     else
     {
-        U1_printf("OTA GO A!\r\n");
-        LOAD_A(STM32_A_START_ADDR);      // 无标记 → 直接跳 A 区
+        U1_printf("进入BootLoader命令行\r\n");
+        BootLoader_Info();
     }
+    
+}
+
+uint8_t BootLoader_Enter(uint8_t timeout)
+{
+    U1_printf("%ds内，输入小写 w ，进入BootLoader命令行\r\n", timeout/10);
+    while(timeout--)
+    {
+        Delay_ms(100);
+        if(USART1_RxBuf[0] == 'w')
+        {
+            return 1;       /* 进入BootLoader命令行 */
+        }
+    }
+    return 0;       /* 未进入BootLoader命令行 */
+}
+
+void BootLoader_Info(void)
+{
+    U1_printf("\r\n");
+    U1_printf("[1]擦除A区\r\n");
+    U1_printf("[2]串口IAP下载A区程序\r\n");
+    U1_printf("[3]设置OTA版本号\r\n");
+    U1_printf("[4]查询OTA版本号\r\n");
+    U1_printf("[5]向外部Flash下载程序\r\n");
+    U1_printf("[6]使用外部Flash内程序\r\n");
+    U1_printf("[7]重启\r\n");
 }
 
 //===========================================================================
