@@ -93,7 +93,7 @@ void W25Q64_PageProgram(uint32_t addr, const uint8_t *buf, uint16_t len)
 	W25Q64_WaitBusy();
 }
 
-/* 擦除一个 64KB 块 */
+/* 擦除一个 64KB 块（W25Q64 最小擦除单位之一，另有 4KB 扇区擦除可用） */
 void W25Q64_EraseBlock64K(uint32_t addr)
 {
 	W25Q64_WriteEnable();

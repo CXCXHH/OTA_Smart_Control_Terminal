@@ -13,7 +13,7 @@
 typedef struct 
 {
     uint32_t OTA_FLAG;
-    uint32_t Firelen[11];  // 0号成员固定对呀OTA的大小
+    uint32_t Firelen[11];  /* 0号成员固定对应OTA总体大小 */
 }OTA_InfoCB;
 #define OTA_INFOCB_SIZE sizeof(OTA_InfoCB)
 

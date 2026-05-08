@@ -24,13 +24,15 @@ void SPI1_Init(void)
 	/* 复位 SPI1 */
 	SPI_I2S_DeInit(SPI1);
 
-	/* 配置 SPI1 为主机模式 */
+	/* SPI Mode 0 (CPOL=Low, CPHA=1Edge) — W25Q64 默认 SPI 模式 */
 	SPI_InitStructure.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
 	SPI_InitStructure.SPI_Mode = SPI_Mode_Master;
 	SPI_InitStructure.SPI_DataSize = SPI_DataSize_8b;
 	SPI_InitStructure.SPI_CPOL = SPI_CPOL_Low;
 	SPI_InitStructure.SPI_CPHA = SPI_CPHA_1Edge;
+	/* 软件 NSS，由 GPIO PA4 独立控制 W25Q64 CS */
 	SPI_InitStructure.SPI_NSS = SPI_NSS_Soft;
+	/* APB2=72MHz，预分频 2 → SCK=36MHz，W25Q64 最大支持 80MHz */
 	SPI_InitStructure.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_2;
 	SPI_InitStructure.SPI_FirstBit = SPI_FirstBit_MSB;
 	SPI_InitStructure.SPI_CRCPolynomial = 7;

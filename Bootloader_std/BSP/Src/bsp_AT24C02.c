@@ -65,6 +65,6 @@ void AT24C02_WriteOTAInfo(void)
     for(i=0;i<OTA_INFOCB_SIZE/16;i++)
     {
         AT24C02_WritePage(i*16, (uint8_t *)&OTA_Info+i*16);
-        Delay_ms(5);
+        Delay_ms(5);  /* AT24C02 内部写周期 tWR max 5ms，写入后需等待 */
     }
 }

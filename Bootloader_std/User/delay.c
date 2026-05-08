@@ -1,10 +1,12 @@
 #include "delay.h"
 
+/* HCLK = 72MHz，SysTick 时钟源选择 HCLK（非 HCLK/8）*/
 void Delay_Init(void)
 {
     SysTick_CLKSourceConfig(SysTick_CLKSource_HCLK);
 }
 
+/* 72 ticks/us = HCLK 72MHz / 1MHz */
 void Delay_us(uint16_t us)
 {
     SysTick->LOAD = us * 72;
