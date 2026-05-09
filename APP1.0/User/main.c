@@ -11,7 +11,7 @@ int main(void)
 	uint8_t rbuf[256];
 
 	Bsp_Init();
-	W25Q64_Init();
+	
 
 	U1_printf("=== W25Q64 Block0 Test ===\r\n");
 

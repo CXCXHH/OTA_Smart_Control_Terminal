@@ -13,14 +13,39 @@ int main(void)
 
 	Delay_Init();
 	Bsp_Init();
-	/* 写入默认 OTA 信息到 AT24C02（第一次上电时确保 EEPROM 有数据） */
-	AT24C02_WriteOTAInfo();
-	/* 读回 OTA_Info 判断是否需要进入升级模式 */
+	/* 读回 OTA_Info 判断是否需要进入升级模式，避免覆盖已保存的外部 Flash 固件长度 */
 	AT24C02_ReadOTAInfo();
 	BootLoader_Brance();
 	while(1)
 	{
-		if(BootStaFlag && UPDATA_A_FLAG)  /* OTA 标记有效 → 将 W25Q64 固件搬入 A 区 */
+		Delay_ms(10);
+		if(U0CB.URxDataOUT != U0CB.URxDataIN)
+		{
+			BootLoader_Event(U0CB.URxDataOUT->start,U0CB.URxDataOUT->end - U0CB.URxDataOUT->start + 1);
+			U0CB.URxDataOUT++;
+			if(U0CB.URxDataOUT == U0CB.URxDataEND)
+			{
+				U0CB.URxDataOUT = &U0CB.UrxDataPtr[0];  /* 回绕到队首 */
+			}
+		}
+		if(BootStaFlag & IAP_XMODEMC_FLAG)
+		{
+			if(UpDataA.XmodemTimer >= 100)
+			{
+				U1_printf("C");
+				UpDataA.XmodemTimer = 0;
+			}
+			UpDataA.XmodemTimer++;
+		}
+
+
+
+
+
+
+
+
+		if(BootStaFlag & UPDATA_A_FLAG)  /* OTA 标记有效 → 将 W25Q64 固件搬入 A 区 */
 		{
 			U1_printf("长度%d字节\r\n", OTA_Info.Firelen[UpDataA.W25Q64_BlockNB]);
 			/* 固件长度必须 4 字节对齐（Flash 按 half-word 编程） */
@@ -46,6 +71,7 @@ int main(void)
 					OTA_Info.OTA_FLAG = 0;
 					AT24C02_WriteOTAInfo();
 				}
+				U1_printf("升级完成\r\n");
 				NVIC_SystemReset();  /* 复位进入用户程序 */
 			}
 			else

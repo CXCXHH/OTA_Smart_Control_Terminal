@@ -1,8 +1,23 @@
-#include "boot.h"
 #include "main.h"
+#include "boot.h"
+
 
 // 函数指针变量：保存用户程序复位入口，赋值后 call 即跳转
 load_a load_A;
+
+static void W25Q64_WriteUpdateData(uint32_t offset, uint8_t *data, uint16_t len)
+{
+    uint16_t write_len;
+
+    while(len)
+    {
+        write_len = (len > W25Q64_PAGE_SIZE) ? W25Q64_PAGE_SIZE : len;
+        W25Q64_PageProgram(UpDataA.W25Q64_BlockNB * 64 * 1024 + offset, data, write_len);
+        offset += write_len;
+        data += write_len;
+        len -= write_len;
+    }
+}
 
 //===========================================================================
 // 启动决策：检查 OTA 标记，决定进入升级模式或跳转用户程序
@@ -23,12 +38,8 @@ void BootLoader_Brance(void)
             LOAD_A(STM32_A_START_ADDR);      // 无标记 → 直接跳 A 区
         }
     }
-    else
-    {
-        U1_printf("进入BootLoader命令行\r\n");
-        BootLoader_Info();
-    }
-    
+    U1_printf("进入BootLoader命令行\r\n");
+    BootLoader_Info();
 }
 
 uint8_t BootLoader_Enter(uint8_t timeout)
@@ -55,6 +66,218 @@ void BootLoader_Info(void)
     U1_printf("[5]向外部Flash下载程序\r\n");
     U1_printf("[6]使用外部Flash内程序\r\n");
     U1_printf("[7]重启\r\n");
+}
+
+void BootLoader_Event(uint8_t *data, uint16_t datalen)
+{
+    int temp;
+    uint32_t flash_offset;
+    uint16_t remain_len;
+
+    if(BootStaFlag == 0)
+    {
+        switch(data[0])
+        {
+            case '1':
+                U1_printf("擦除A区\r\n");
+                Flash_ErasePage(STM32_A_START_ADDR,STM32_A_PAGE_COUNT);
+                break;
+
+            case '2':
+                U1_printf("XMODEM download to A, use bin file\r\n");
+                Flash_ErasePage(STM32_A_START_ADDR,STM32_A_PAGE_COUNT);
+                BootStaFlag |= (IAP_XMODEMC_FLAG | IAP_XMODEMD_FLAG);
+                UpDataA.XmodemTimer = 0;
+                UpDataA.XmodemNB = 0;
+                break;
+
+            case '3':
+                U1_printf("设置版本号\r\n");
+                BootStaFlag |= SET_VERDION_FLAG;
+                break;
+
+            case '4':
+                U1_printf("查询版本号\r\n");
+                AT24C02_ReadOTAInfo();
+                U1_printf("Version:%s\r\n", OTA_Info.OTA_ver);
+                BootLoader_Info();
+                break;
+
+            case '5':
+                U1_printf("Download to external Flash, input block number(1~9)\r\n");
+                BootStaFlag |= CMD5_FLAG;
+                break;    
+
+            case '6':
+                U1_printf("Use program in external Flash, input block number(1~9)\r\n");
+                BootStaFlag |= CMD6_FLAG;
+                break; 
+
+            case '7':
+                U1_printf("重启\r\n");
+                Delay_ms(100);
+                NVIC_SystemReset();
+        }
+    }
+    else if(BootStaFlag & IAP_XMODEMD_FLAG)
+    {
+        if((datalen == 133) && (data[0] == 0x01))
+        {
+            BootStaFlag &= ~IAP_XMODEMC_FLAG;
+            UpDataA.XmodemCRC = Xmodem_CRC16(&data[3], 128);
+            if(UpDataA.XmodemCRC == ((uint16_t)data[131] << 8) | data[132])
+            {
+                UpDataA.XmodemNB++;
+                memcpy(&UpDataA.Updatabuff[((UpDataA.XmodemNB-1) % (FLASH_PAGE_SIZE/128))*128], &data[3], 128);
+                if((UpDataA.XmodemNB % (FLASH_PAGE_SIZE/128)) == 0)
+                {
+                    if(BootStaFlag & CMD5_XMODEM_FLAG)
+                    {
+                        flash_offset = ((UpDataA.XmodemNB / (FLASH_PAGE_SIZE/128)) - 1) * FLASH_PAGE_SIZE;
+                        W25Q64_WriteUpdateData(flash_offset, UpDataA.Updatabuff, FLASH_PAGE_SIZE);
+                    }
+                    else
+                    {
+                        Flash_WriteBuffer(((UpDataA.XmodemNB / (FLASH_PAGE_SIZE/128))-1)*FLASH_PAGE_SIZE+STM32_A_START_ADDR,
+                                            UpDataA.Updatabuff,
+                                            FLASH_PAGE_SIZE);
+                    }
+                }
+                U1_printf("\x06");
+            }
+            else
+            {
+                U1_printf("\x15");
+            }
+        }
+        /* EOT：单独的外层分支，不能嵌套在 datalen==133 里面 */
+        if((datalen == 1) && (data[0] == 0x04))
+        {
+            BootStaFlag &= ~IAP_XMODEMC_FLAG;
+            U1_printf("\x06");
+            if((UpDataA.XmodemNB % (FLASH_PAGE_SIZE/128)) != 0)
+            {
+                remain_len = (UpDataA.XmodemNB % (FLASH_PAGE_SIZE/128)) * 128;
+                if(BootStaFlag & CMD5_XMODEM_FLAG)
+                {
+                    flash_offset = (UpDataA.XmodemNB / (FLASH_PAGE_SIZE/128)) * FLASH_PAGE_SIZE;
+                    W25Q64_WriteUpdateData(flash_offset, UpDataA.Updatabuff, remain_len);
+                }
+                else
+                {
+                    Flash_WriteBuffer(((UpDataA.XmodemNB / (FLASH_PAGE_SIZE/128)))*FLASH_PAGE_SIZE+STM32_A_START_ADDR,
+                                    UpDataA.Updatabuff,
+                                    remain_len);
+                }
+                
+            }
+            BootStaFlag &= ~IAP_XMODEMD_FLAG;
+             if(BootStaFlag & CMD5_XMODEM_FLAG)
+             {
+                OTA_Info.Firelen[UpDataA.W25Q64_BlockNB] = UpDataA.XmodemNB * 128;
+                AT24C02_WriteOTAInfo();
+                BootStaFlag &= ~(CMD5_FLAG | CMD5_XMODEM_FLAG);
+                BootLoader_Info();
+             }
+             else
+             {
+                Delay_ms(100);
+                NVIC_SystemReset();
+             }
+            
+        }
+    }
+    else if(BootStaFlag & SET_VERDION_FLAG)
+    {
+        if((datalen == 26))
+        {
+            /*版本号例，VER-1.0.0-2026/05/08-17:00*/
+            if(sscanf((char *)data,"VER-%d.%d.%d-%d/%d/%d-%d:%d",&temp,&temp,&temp,&temp,&temp,&temp,&temp,&temp) == 8)
+            {
+                memset(OTA_Info.OTA_ver,0,32);
+                memcpy(OTA_Info.OTA_ver,data,26);
+                AT24C02_WriteOTAInfo();
+                U1_printf("版本号正确\r\n");
+                BootStaFlag &= ~SET_VERDION_FLAG;
+                BootLoader_Info();
+            }
+            else
+            {
+                U1_printf("版本号格式错误\r\n");
+            }
+        }
+        else
+        {
+            U1_printf("版本号长度错误\r\n");
+        }
+    }
+    else if(BootStaFlag & CMD5_FLAG)
+    {
+        if(datalen==1)
+        {
+            if((data[0] >= 0x31) && (data[0] <= 0x39))
+            {
+                UpDataA.W25Q64_BlockNB = data[0] - 0x30;
+                BootStaFlag |= (IAP_XMODEMC_FLAG | IAP_XMODEMD_FLAG | CMD5_XMODEM_FLAG);
+                UpDataA.XmodemTimer = 0;
+                UpDataA.XmodemNB = 0;
+                OTA_Info.Firelen[UpDataA.W25Q64_BlockNB] = 0;
+                W25Q64_EraseBlock64K(UpDataA.W25Q64_BlockNB * 64 * 1024);
+                U1_printf("XMODEM download to external Flash block %d, use bin file\r\n",UpDataA.W25Q64_BlockNB);
+                BootStaFlag &= ~CMD5_FLAG;
+            }
+            else
+            {
+                U1_printf("编号错误\r\n");
+            }
+        }
+        else
+        {
+            U1_printf("Data长度错误\r\n");
+        }
+    }
+    else if(BootStaFlag & CMD6_FLAG)
+    {
+        if(datalen==1)
+        {
+            if((data[0] >= 0x31) && (data[0] <= 0x39))
+            {
+                UpDataA.W25Q64_BlockNB = data[0] - 0x30;
+                BootStaFlag |= UPDATA_A_FLAG;
+                BootStaFlag &= ~CMD6_FLAG;
+            }
+            else
+            {
+                U1_printf("编号错误\r\n");
+            }
+        }
+        else
+        {
+            U1_printf("Data长度错误\r\n");
+        }
+    }
+}
+
+//===========================================================================
+// XMODEM CRC-CCITT (多项式 0x1021, 初值 0x0000)
+//===========================================================================
+uint16_t Xmodem_CRC16(uint8_t *data, uint16_t datalen)
+{
+    uint16_t crc = 0;
+    uint16_t i;
+    uint8_t j;
+    for(i = 0; i < datalen; i++)
+    {
+        crc ^= (uint16_t)data[i] << 8;
+        for(j = 0; j < 8; j++)
+        {
+            if(crc & 0x8000)
+                crc = (crc << 1) ^ 0x1021;
+            else
+                crc <<= 1;
+        }
+    }
+    return crc;
 }
 
 //===========================================================================
@@ -95,6 +318,10 @@ void LOAD_A(uint32_t addr)
         BootLoader_Clear();                    // 复位外设，避免中断冲突
 
         load_A();                              // 跳转，此后再不返回
+    }
+    else
+    {
+        U1_printf("Jump A faild!\r\n");
     }
 }
 
