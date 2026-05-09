@@ -1,3 +1,7 @@
+/*******************************************************
+ * FileName: main.h
+ * Description: 全局类型定义、状态标志、外部变量声明
+ ******************************************************/
 #ifndef __MAIN_H
 #define __MAIN_H
 
@@ -38,4 +42,10 @@ typedef struct
 extern OTA_InfoCB OTA_Info;
 extern UpDataA_CB UpDataA;
 extern uint32_t BootStaFlag;
+
+/* Internal main loop handlers (defined in main.c) */
+void BootLoader_PollCommandFrame(void);
+void BootLoader_PollXmodemRequest(void);
+void BootLoader_UpdateAFromExternalFlash(void);
+
 #endif
