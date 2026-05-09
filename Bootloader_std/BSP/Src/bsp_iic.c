@@ -67,18 +67,13 @@ void IIC_Send_Byte(uint8_t txd)
 
 uint8_t IIC_wait_Ack(int16_t timeout)
 {
-    do
-    {
-       timeout--;
-       Delay_us(2);
-    } while((READ_SDA) && (timeout >= 0));
-    if(timeout < 0) return 1;
     IIC_SCL_H;
     Delay_us(2);
-    if(READ_SDA != 0) return 2;
+    while((READ_SDA) && (timeout-- > 0))
+        Delay_us(2);
     IIC_SCL_L;
     Delay_us(2);
-    return 0;
+    return (timeout > 0) ? 0 : 1;
 }
 
 uint8_t IIC_Read_Byte(uint8_t ack)

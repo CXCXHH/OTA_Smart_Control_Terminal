@@ -14,6 +14,13 @@
 #include "bsp_spi.h"
 #include "bsp_w25q64.h"
 
+#include "bsp_gpio.h"
+#include "bsp_adc.h"
+#include "bsp_usart2.h"
+#include "bsp_usart3.h"
+#include "bsp_tim.h"
+#include "bsp_can.h"
+
 #include "delay.h"
 #include "bsp_AT24C02.h"
 

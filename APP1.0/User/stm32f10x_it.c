@@ -24,6 +24,9 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f10x_it.h"
 #include "bsp.h"
+#include "fifo.h"
+#include "canfestival.h"
+#include "TestSlave.h"
 
 /** @addtogroup STM32F10x_StdPeriph_Template
   * @{
@@ -158,38 +161,9 @@ void UsageFault_Handler(void)
 }
 
 /**
-  * @brief  This function handles SVCall exception.
-  * @param  None
-  * @retval None
-  */
-void SVC_Handler(void)
-{
-}
-
-/**
-  * @brief  This function handles Debug Monitor exception.
-  * @param  None
-  * @retval None
+  * @brief  Debug Monitor exception.
   */
 void DebugMon_Handler(void)
-{
-}
-
-/**
-  * @brief  This function handles PendSVC exception.
-  * @param  None
-  * @retval None
-  */
-void PendSV_Handler(void)
-{
-}
-
-/**
-  * @brief  This function handles SysTick Handler.
-  * @param  None
-  * @retval None
-  */
-void SysTick_Handler(void)
 {
 }
 
@@ -200,17 +174,43 @@ void SysTick_Handler(void)
 /*  file (startup_stm32f10x_xx.s).                                            */
 /******************************************************************************/
 
-/**
-  * @brief  This function handles PPP interrupt request.
-  * @param  None
-  * @retval None
-  */
-/*void PPP_IRQHandler(void)
+/******************************************************************************/
+/*                 STM32F10x Peripherals Interrupt Handlers                   */
+/******************************************************************************/
+
+/* USART2_IRQHandler 在 Protocol/FreeModbus/portserial.c 中定义 */
+/* TIM3_IRQHandler    在 Protocol/FreeModbus/porttimer.c 中定义    */
+void USART3_IRQHandler(void)
 {
-}*/
+    if (USART_GetITStatus(USART3, USART_IT_RXNE) != RESET)
+    {
+        uint8_t c = USART_ReceiveData(USART3);
+        extern FIFO_t UART3_FIFO;
+        FIFO_Push(&UART3_FIFO, c);
+    }
+}
 
 /**
   * @}
   */
 
 /******************* (C) COPYRIGHT 2011 STMicroelectronics *****END OF FILE****/
+
+void USB_LP_CAN1_RX0_IRQHandler(void)
+{
+	CanRxMsg RxMsg;
+	extern void canDispatch(CO_Data*, Message*);
+	extern CO_Data TestSlave_Data;
+
+	if (CAN_GetITStatus(CAN1, CAN_IT_FMP0) != RESET)
+	{
+		Message m;
+		CAN_Receive(CAN1, CAN_FIFO0, &RxMsg);
+		m.cob_id = RxMsg.StdId;
+		m.rtr = (RxMsg.RTR == CAN_RTR_Remote) ? 1 : 0;
+		m.len = RxMsg.DLC;
+		uint8_t i;
+		for (i = 0; i < 8; i++) m.data[i] = RxMsg.Data[i];
+		canDispatch(&TestSlave_Data, &m);
+	}
+}

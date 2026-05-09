@@ -17,5 +17,13 @@ void IIC_Stop(void);
 void IIC_Send_Byte(uint8_t txd);
 uint8_t IIC_wait_Ack(int16_t timeout);
 uint8_t IIC_Read_Byte(uint8_t ack);
+uint8_t IIC_CheckDevice(uint8_t addr);
+uint8_t IIC_WriteBuf(uint8_t addr, uint8_t *buf, uint16_t len);
+uint8_t IIC_ReadBuf(uint8_t addr, uint8_t *buf, uint16_t len);
+uint8_t IIC_MemWrite(uint8_t addr, uint8_t reg, uint8_t *buf, uint16_t len);
+uint8_t IIC_MemRead(uint8_t addr, uint8_t reg, uint8_t *buf, uint16_t len);
+uint8_t IIC_GetLastError(void);
+uint8_t IIC_GetSCL(void);
+uint8_t IIC_GetSDA(void);
 
 #endif
