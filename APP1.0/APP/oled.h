@@ -7,6 +7,6 @@
 
 void OLED_Init(void);
 void OLED_Clear(void);
-void OLED_ShowStr(uint8_t x, uint8_t y, const char ch[]);
+void OLED_ShowStr(uint8_t x, uint8_t y, const char ch[], uint8_t size);
 
 #endif

@@ -17,13 +17,10 @@ int main(void)
 
     OLED_Init();
     OLED_Clear();
-    OLED_ShowStr(0, 0, "OTA Term v1");
-    OLED_ShowStr(0, 2, "I2C+AHT20+INA");
-    OLED_ShowStr(0, 4, "M+C+M ready");
+    OLED_ShowStr(0, 0, "OTA Version v1", 1);
+    
 
     FIFO_Init(&UART3_FIFO);
-
-    OTA_CheckAndRollback();
 
     Modbus_Init(1);
     U1_printf("Modbus OK\r\n");
