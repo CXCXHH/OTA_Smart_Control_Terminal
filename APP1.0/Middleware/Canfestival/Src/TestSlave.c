@@ -103,8 +103,8 @@ $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
                     UNS8 TestSlave_highestSubIndex_obj1016 = 0;
                     UNS32 TestSlave_obj1016[]={0};
 
-/* index 0x1017 :   Producer Heartbeat Time */ 
-                    UNS16 TestSlave_obj1017 = 0x0;   /* 0 */
+/* index 0x1017 :   Producer Heartbeat Time */
+                    UNS16 TestSlave_obj1017 = 1000;   /* 1000 ms heartbeat for CAN task bus visibility */
 
 /* index 0x1018 :   Identity. */
                     UNS8 TestSlave_highestSubIndex_obj1018 = 4; /* number of subindex - 1*/

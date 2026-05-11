@@ -2,6 +2,7 @@
 #include "task.h"
 #include "modbus_app.h"
 #include "sensor_app.h"
+#include "canopen_app.h"
 #include "bsp.h"
 #include "mqtt.h"
 #include "wifi4g.h"
@@ -9,10 +10,12 @@
 
 #define MODBUS_TASK_PRIO      (tskIDLE_PRIORITY + 2)
 #define SENSOR_TASK_PRIO      (tskIDLE_PRIORITY + 1)
+#define CANOPEN_TASK_PRIO     (tskIDLE_PRIORITY + 1)
 #define MQTT_TASK_PRIO        (tskIDLE_PRIORITY + 1)
 
 #define MODBUS_TASK_STACK     256
 #define SENSOR_TASK_STACK     256
+#define CANOPEN_TASK_STACK    256
 #define MQTT_TASK_STACK       384
 
 static void SensorTask(void *pvParameters)
@@ -65,12 +68,26 @@ static void MQTTTask(void *pvParameters)
     }
 }
 
+static void CANopenTask(void *pvParameters)
+{
+    (void)pvParameters;
+    Canopen_Init();
+    U1_printf("CANopen task start\r\n");
+    for (;;)
+    {
+        Canopen_Process();
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
+}
+
 void App_Tasks_Init(void)
 {
     xTaskCreate(ModbusTask, "Modbus", MODBUS_TASK_STACK, NULL,
                 MODBUS_TASK_PRIO, NULL);
     xTaskCreate(SensorTask, "Sensor", SENSOR_TASK_STACK, NULL,
                 SENSOR_TASK_PRIO, NULL);
+    xTaskCreate(CANopenTask, "CANopen", CANOPEN_TASK_STACK, NULL,
+                CANOPEN_TASK_PRIO, NULL);
     xTaskCreate(MQTTTask, "MQTT", MQTT_TASK_STACK, NULL,
                 MQTT_TASK_PRIO, NULL);
 }

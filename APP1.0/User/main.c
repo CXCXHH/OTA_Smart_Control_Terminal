@@ -5,8 +5,6 @@
 #include "modbus_app.h"
 #include "app_tasks.h"
 #include "ota.h"
-#include "canfestival.h"
-#include "TestSlave.h"
 #include "oled.h"
 #include "wifi4g.h"
 
@@ -18,18 +16,11 @@ int main(void)
     OLED_Init();
     OLED_Clear();
     OLED_ShowStr(0, 0, "OTA Version v1", 1);
-    
 
     FIFO_Init(&UART3_FIFO);
 
     Modbus_Init(1);
     U1_printf("Modbus OK\r\n");
-
-    CanFestival_Can_Init();
-    setNodeId(&TestSlave_Data, 1);
-    setState(&TestSlave_Data, Initialisation);
-    setState(&TestSlave_Data, Operational);
-    U1_printf("CANopen OK\r\n");
 
     App_Tasks_Init();
 

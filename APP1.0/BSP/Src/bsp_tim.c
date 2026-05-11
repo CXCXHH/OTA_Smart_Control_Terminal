@@ -3,6 +3,7 @@
 void TIM2_Init(void)
 {
     TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
+    NVIC_InitTypeDef NVIC_InitStructure;
 
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
 
@@ -11,6 +12,14 @@ void TIM2_Init(void)
     TIM_TimeBaseStructure.TIM_Period = 0xFFFF;
     TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1;
     TIM_TimeBaseInit(TIM2, &TIM_TimeBaseStructure);
+
+    /* TIM2 IRQ starts later in CanFestival_Can_Init() to avoid calling
+       TimeDispatch() before the stack is initialized */
+    NVIC_InitStructure.NVIC_IRQChannel = TIM2_IRQn;
+    NVIC_InitStructure.NVIC_IRQChannelCmd = DISABLE;
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;
+    NVIC_Init(&NVIC_InitStructure);
 
     TIM_Cmd(TIM2, ENABLE);
 }

@@ -196,6 +196,21 @@ void USART3_IRQHandler(void)
 
 /******************* (C) COPYRIGHT 2011 STMicroelectronics *****END OF FILE****/
 
+/**
+  * @brief  TIM2 update interrupt — drives CanFestival timer tick.
+  * @note   TIM2 overflows every 65535 us (72 MHz / 72 = 1 MHz, period 0xFFFF).
+  *         TimeDispatch() processes alarm queue, heartbeat, lifeguard, etc.
+  */
+void TIM2_IRQHandler(void)
+{
+    if (TIM_GetITStatus(TIM2, TIM_IT_Update) != RESET)
+    {
+        TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
+        extern void TimeDispatch(void);
+        TimeDispatch();
+    }
+}
+
 void USB_LP_CAN1_RX0_IRQHandler(void)
 {
 	CanRxMsg RxMsg;

@@ -13,14 +13,8 @@ void _post_sync(CO_Data *d) { (void)d; }
 void emergencyInit(CO_Data *d) { (void)d; }
 void emergencyStop(CO_Data *d) { (void)d; }
 UNS8 masterSendNMTstateChange(CO_Data *d, UNS8 nodeID, UNS8 state) { (void)d; (void)nodeID; (void)state; return 0; }
-void _heartbeatError(CO_Data *d, UNS8 id) { (void)d; (void)id; }
-void _nodeguardError(CO_Data *d, UNS8 id) { (void)d; (void)id; }
-void _post_SlaveBootup(CO_Data *d, UNS8 id) { (void)d; (void)id; }
-void _post_SlaveStateChange(CO_Data *d, UNS8 id, UNS8 state) { (void)d; (void)id; (void)state; }
-void lifeGuardInit(CO_Data *d) { (void)d; }
-void lifeGuardStop(CO_Data *d) { (void)d; }
+UNS8 masterSendNMTnodeguard(CO_Data *d, UNS8 nodeId) { (void)d; (void)nodeId; return 0; }
 void proceedEMCY(CO_Data *d, Message *m) { (void)d; (void)m; }
-void proceedNODE_GUARD(CO_Data *d, Message *m) { (void)d; (void)m; }
 UNS8 proceedSYNC(CO_Data *d) { (void)d; return 0; }
 void startSYNC(CO_Data *d) { (void)d; }
 void stopSYNC(CO_Data *d) { (void)d; }
@@ -40,13 +34,13 @@ uint8_t canSend(CAN_PORT notused, Message *message)
     TxMessage.ExtId = 0;
     TxMessage.IDE = CAN_Id_Standard;
     TxMessage.RTR = message->rtr ? CAN_RTR_Remote : CAN_RTR_Data;
-    TxMessage.DLC = message->len;
+    TxMessage.DLC = message->len > 8 ? 8 : message->len;
     memcpy(TxMessage.Data, message->data, message->len);
 
     uint8_t mailbox = CAN_Transmit(CAN1, &TxMessage);
     while (CAN_TransmitStatus(CAN1, mailbox) != CAN_TxStatus_Ok && timeout--);
 
-    return (timeout > 0) ? 1 : 0;
+    return (timeout > 0) ? 0 : 0xFF;
 }
 
 void setTimer(TIMEVAL value)

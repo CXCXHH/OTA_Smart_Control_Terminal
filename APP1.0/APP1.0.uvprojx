@@ -665,6 +665,11 @@
               <FilePath>.\APP\app_tasks.c</FilePath>
             </File>
             <File>
+              <FileName>canopen_app.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\APP\canopen_app.c</FilePath>
+            </File>
+            <File>
               <FileName>mqtt.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\APP\mqtt.c</FilePath>
@@ -763,6 +768,11 @@
               <FileName>timer.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Middleware\Canfestival\Src\timer.c</FilePath>
+            </File>
+            <File>
+              <FileName>lifegrd.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Middleware\Canfestival\Src\lifegrd.c</FilePath>
             </File>
           </Files>
         </Group>
