@@ -10,6 +10,7 @@
 #include "mqtt.h"
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 volatile uint8_t WIFI4G_CMD_Status = 0;
 uint8_t Parse_Substr[32] = {0};
@@ -17,6 +18,10 @@ FIFO_t UART3_FIFO;
 
 #define NSize 512
 static uint8_t RecvBuf[NSize];
+
+/* 持久化 RPC request ID，应对 topic 与 JSON payload 分两批到达的情况 */
+static uint8_t  RPC_Pending    = 0;
+static uint32_t RPC_RequestId  = 0;
 
 /**
   * @brief  等待 AT 命令响应 (阻塞)
@@ -57,9 +62,30 @@ uint8_t WIFI4G_Parse_Queue(void)
 
     if (MQTT_Download_Flag)
     {
-        char *leftp = strstr((char *)RecvBuf, "{");
-        if (leftp)
-            MQTT_Parse_JsonData((uint8_t *)leftp);
+        char *topicp = strstr((char *)RecvBuf, "v1/devices/me/rpc/request/");
+        char *leftp  = strstr((char *)RecvBuf, "{");
+        char *rightp = strrchr((char *)RecvBuf, '}');
+
+        /* 提取 RPC request ID（提前扫描，即使 JSON payload 稍后才到） */
+        if (topicp != NULL) {
+            topicp += strlen("v1/devices/me/rpc/request/");
+            RPC_RequestId = strtoul(topicp, NULL, 10);
+            RPC_Pending = 1;
+            U1_printf("RPC id=%lu\r\n", RPC_RequestId);
+        }
+
+        if ((leftp != NULL) && (rightp != NULL) && (rightp >= leftp)) {
+            *++rightp = '\0';
+            U1_printf("MQTT RX:%s\r\n", leftp);
+
+            if (RPC_Pending) {
+                MQTT_Parse_DeviceData((uint8_t *)leftp, RPC_RequestId);
+                RPC_Pending    = 0;
+                RPC_RequestId  = 0;
+            } else {
+                MQTT_Parse_JsonData((uint8_t *)leftp);
+            }
+        }
     }
 
     if (strstr((const char *)RecvBuf, "+MQTTDISCONNECTED"))

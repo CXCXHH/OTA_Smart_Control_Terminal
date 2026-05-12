@@ -10,12 +10,14 @@
 #include "bsp.h"
 #include "modbus_app.h"
 #include "bsp_gpio.h"
+#include "cJSON.h"
 #include <string.h>
 #include <stdio.h>
 
 volatile uint8_t MQTT_Download_Flag = 0;
 
 /** 读取 STM32 唯一 ID(96位) 作为 MQTT 客户端标识 */
+#if MQTT_WIFI_4G_ENABLE
 static uint8_t *Get_CPUID(void)
 {
     static uint8_t cpuid[32];
@@ -26,6 +28,7 @@ static uint8_t *Get_CPUID(void)
     sprintf((char *)cpuid, "%08X%08X%08X", id[0], id[1], id[2]);
     return cpuid;
 }
+#endif
 
 /** ESP8266 (WiFi) 方式连接 MQTT 服务器 */
 #if MQTT_WIFI_4G_ENABLE
@@ -200,6 +203,132 @@ uint8_t MQTT_SendData(void)
     Usart3_SendBuf(buf, strlen((char *)buf));
 #endif
     return 1;
+}
+
+static uint8_t MQTT_SendRpcResponse(uint32_t request_id, const char *status)
+{
+    uint8_t buf[128];
+
+    if ((request_id == 0) || (status == NULL))
+        return 0;
+
+#if MQTT_WIFI_4G_ENABLE
+    {
+        uint8_t cmd[128];
+        uint16_t len = strlen(status);
+
+        sprintf((char *)cmd,
+            "AT+MQTTPUBRAW=0,\"v1/devices/me/rpc/response/%lu\",%d,0,0\r\n",
+            request_id, len);
+        strcpy((char *)Parse_Substr, ">");
+        WIFI4G_CMD_Status = WIFI4G_NOT;
+        Usart3_SendBuf(cmd, strlen((char *)cmd));
+        if (Test_WIFI4G_CMD_Status(2000) != WIFI4G_OK)
+            return 0;
+
+        strcpy((char *)Parse_Substr, "OK\r\n");
+        WIFI4G_CMD_Status = WIFI4G_NOT;
+        Usart3_SendBuf((uint8_t *)status, len);
+        if (Test_WIFI4G_CMD_Status(5000) != WIFI4G_OK)
+            return 0;
+    }
+#else
+    sprintf((char *)buf, "MQPUB,1,v1/devices/me/rpc/response/%lu,%s",
+            request_id, status);
+    Usart3_SendBuf(buf, strlen((char *)buf));
+#endif
+    return 1;
+}
+
+uint8_t MQTT_Parse_DeviceData(uint8_t *json, uint32_t request_id)
+{
+    cJSON *root;
+    cJSON *method;
+    cJSON *params;
+    uint8_t state;
+    uint8_t changed = 0;
+
+    root = cJSON_Parse((char *)json);
+    if (root == NULL)
+        return 0;
+
+    method = cJSON_GetObjectItem(root, "method");
+    params = cJSON_GetObjectItem(root, "params");
+    if ((method == NULL) || (method->valuestring == NULL)) {
+        U1_printf("RPC parse no method\r\n");
+        cJSON_Delete(root);
+        return 0;
+    }
+    U1_printf("RPC method=%s\r\n", method->valuestring);
+
+    if (strcmp(method->valuestring, "led1Status") == 0) {
+        state = (REG_HOLD_BUF[0] & LED1_CMD) ? 1 : 0;
+        MQTT_SendRpcResponse(request_id, state ? "true" : "false");
+        cJSON_Delete(root);
+        return 1;
+    } else if (strcmp(method->valuestring, "beepStatus") == 0) {
+        state = (REG_HOLD_BUF[0] & BEEP_CMD) ? 1 : 0;
+        MQTT_SendRpcResponse(request_id, state ? "true" : "false");
+        cJSON_Delete(root);
+        return 1;
+    } else if (strcmp(method->valuestring, "relayStatus") == 0) {
+        state = (REG_HOLD_BUF[0] & RELAY_CMD) ? 1 : 0;
+        MQTT_SendRpcResponse(request_id, state ? "true" : "false");
+        cJSON_Delete(root);
+        return 1;
+    }
+
+    if (params == NULL) {
+        cJSON_Delete(root);
+        return 0;
+    }
+
+    {
+        /* ── ThingsBoard RPC params 可能是直接值或者 {state:…} 对象 ── */
+        cJSON *stateItem = cJSON_GetObjectItem(params, "state");
+        if (stateItem) {
+            /* params = {"state": true}  对象格式 */
+            if (cJSON_IsBool(stateItem))
+                state = cJSON_IsTrue(stateItem) ? 1 : 0;
+            else
+                state = (stateItem->valueint != 0) ? 1 : 0;
+        } else {
+            /* params = true / false / 1 / 0  直接值格式 */
+            if (cJSON_IsBool(params))
+                state = cJSON_IsTrue(params) ? 1 : 0;
+            else
+                state = (params->valueint != 0) ? 1 : 0;
+        }
+    }
+
+    if (strcmp(method->valuestring, "led1Set") == 0) {
+        if (state)
+            REG_HOLD_BUF[0] |= LED1_CMD;
+        else
+            REG_HOLD_BUF[0] &= (uint16_t)~LED1_CMD;
+        changed = 1;
+    } else if (strcmp(method->valuestring, "beepSet") == 0) {
+        if (state)
+            REG_HOLD_BUF[0] |= BEEP_CMD;
+        else
+            REG_HOLD_BUF[0] &= (uint16_t)~BEEP_CMD;
+        changed = 1;
+    } else if (strcmp(method->valuestring, "relaySet") == 0) {
+        if (state)
+            REG_HOLD_BUF[0] |= RELAY_CMD;
+        else
+            REG_HOLD_BUF[0] &= (uint16_t)~RELAY_CMD;
+        changed = 1;
+    }
+
+    if (changed) {
+        Output_Control(REG_HOLD_BUF[0]);
+        U1_printf("RPC hold0=%04X\r\n", REG_HOLD_BUF[0]);
+        MQTT_SendRpcResponse(request_id, state ? "true" : "false");
+    }
+
+    cJSON_Delete(root);
+    return changed;
 }
 
 /**

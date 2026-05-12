@@ -24,6 +24,9 @@
 #define CANOPEN_TASK_STACK    256
 #define MQTT_TASK_STACK       384
 
+#define MQTT_RX_PERIOD_MS     50
+#define MQTT_TX_PERIOD_MS     5000
+
 /**
   * @brief  传感器数据采集任务 (500ms周期)
   *         读取 AHT20(温湿度) + INA226(电压/电流/功率) + MCU内部ADC，
@@ -56,12 +59,14 @@ static void ModbusTask(void *pvParameters)
 }
 
 /**
-  * @brief  MQTT + WiFi 任务 (5s周期)
+  * @brief  MQTT + WiFi 任务
   *         连接 WiFi → 连接 MQTT 服务器 → 订阅下行Topic → 周期性上报传感器数据
-  *         掉线时自动重连，收到下行JSON时解析并控制输出
+  *         下行队列高频轮询，避免云端控制命令被遥测上报周期拖慢
   */
 static void MQTTTask(void *pvParameters)
 {
+    TickType_t last_tx_tick;
+
     (void)pvParameters;
 
     FIFO_Init(&UART3_FIFO);
@@ -77,14 +82,21 @@ static void MQTTTask(void *pvParameters)
     else
         U1_printf("MQTT FAIL\r\n");
 
+    last_tx_tick = xTaskGetTickCount();
     for (;;)
     {
         WIFI4G_Parse_Queue();
-        if (!MQTT_Download_Flag)
-            MQTT_Connect_Server();
-        else
-            MQTT_SendData();
-        vTaskDelay(pdMS_TO_TICKS(5000));
+
+        if ((xTaskGetTickCount() - last_tx_tick) >= pdMS_TO_TICKS(MQTT_TX_PERIOD_MS))
+        {
+            last_tx_tick = xTaskGetTickCount();
+            if (!MQTT_Download_Flag)
+                MQTT_Connect_Server();
+            else
+                MQTT_SendData();
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(MQTT_RX_PERIOD_MS));
     }
 }
 
