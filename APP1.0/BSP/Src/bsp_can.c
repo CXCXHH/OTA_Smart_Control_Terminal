@@ -1,5 +1,12 @@
 #include "bsp_can.h"
 
+/**
+  * @brief  初始化 CAN1 (500Kbps)
+  * @note   PA11=RX, PA12=TX
+  *         36MHz APB1 / 预分频8 / (1+6+2) = 500Kbps
+  *         过滤器: 接收所有 ID (IdMask 全 0)
+  *         使能 FIFO0 消息挂起中断 (USB_LP_CAN1_RX0_IRQn)
+  */
 void CAN1_Init(void)
 {
     GPIO_InitTypeDef GPIO_InitStructure;
@@ -59,6 +66,13 @@ void CAN1_Init(void)
     NVIC_Init(&NVIC_InitStructure);
 }
 
+/**
+  * @brief  发送 CAN 标准帧
+  * @param  id  标准 ID (11bit)
+  * @param  data  数据指针
+  * @param  len  数据长度 (最大 8)
+  * @retval 1=发送成功, 0=超时
+  */
 uint8_t CAN1_SendMsg(uint32_t id, uint8_t *data, uint8_t len)
 {
     CanTxMsg TxMessage;

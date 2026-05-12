@@ -1,3 +1,9 @@
+/**
+  * @brief  USART2 驱动 (Modbus RTU 从机)
+  * @note   PA2=TX, PA3=RX
+  *         使用 FreeModbus 协议栈, RXNE 中断接收
+  *         RS485 方向控制由 bsp_gpio.c RS485_TxMode/RxMode 管理
+  */
 #include "bsp_usart2.h"
 #include "bsp_gpio.h"
 

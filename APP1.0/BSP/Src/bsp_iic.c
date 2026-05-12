@@ -1,3 +1,10 @@
+/**
+  * @brief  软件 I2C (位翻转) 驱动
+  * @note   PB6=SCL, PB7=SDA
+  *         SDA 方向在收发时动态切换 (开漏模拟)
+  *         约 250KHz 总线速率 (2us 延迟 + GPIO 翻转开销)
+  *         支持器件探测 / 写缓冲 / 读缓冲 / 带寄存器地址读写
+  */
 #include "bsp.h"
 #include "bsp_iic.h"
 
@@ -67,6 +74,11 @@ void IIC_Init(void)
     IIC_SetLastError(0);
 }
 
+/**
+  * @brief  探测 I2C 从机是否存在
+  * @param  addr  7位地址 (左移1位后的格式)
+  * @retval 0=存在, 1=无应答
+  */
 uint8_t IIC_CheckDevice(uint8_t addr)
 {
     uint8_t ret;
@@ -81,6 +93,14 @@ uint8_t IIC_CheckDevice(uint8_t addr)
     return ret;
 }
 
+/**
+  * @brief  I2C 写缓冲 (无寄存器地址, 连续写)
+  * @param  addr  从机地址
+  * @param  buf   数据缓冲
+  * @param  len   数据长度
+  * @retval 0=成功, 1=失败
+  * @note   len=0 时退化为地址探测
+  */
 uint8_t IIC_WriteBuf(uint8_t addr, uint8_t *buf, uint16_t len)
 {
     uint16_t i;
@@ -116,6 +136,9 @@ fail:
     return 1;
 }
 
+/**
+  * @brief  I2C 读缓冲 (无寄存器地址, 连续读)
+  */
 uint8_t IIC_ReadBuf(uint8_t addr, uint8_t *buf, uint16_t len)
 {
     uint16_t i;
@@ -141,6 +164,12 @@ uint8_t IIC_ReadBuf(uint8_t addr, uint8_t *buf, uint16_t len)
     return 0;
 }
 
+/**
+  * @brief  I2C 写寄存器 (先发寄存器地址, 再写数据)
+  * @param  reg  寄存器地址
+  * @note   适用于 EEPROM/传感器等需要指定内部地址的器件
+  *         内部使用 18 字节临时缓冲 (寄存器 + 数据)
+  */
 uint8_t IIC_MemWrite(uint8_t addr, uint8_t reg, uint8_t *buf, uint16_t len)
 {
     uint8_t tmp[18];
@@ -156,6 +185,10 @@ uint8_t IIC_MemWrite(uint8_t addr, uint8_t reg, uint8_t *buf, uint16_t len)
     return IIC_WriteBuf(addr, tmp, len + 1);
 }
 
+/**
+  * @brief  I2C 读寄存器 (先发寄存器地址, 再读数据)
+  * @note   使用重复起始 (Repeated Start) 而非 Stop-Start
+  */
 uint8_t IIC_MemRead(uint8_t addr, uint8_t reg, uint8_t *buf, uint16_t len)
 {
     uint16_t i;

@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include "fifo.h"
 
+/* AT 命令响应状态 */
 enum { WIFI4G_NOT = 0, WIFI4G_OK, WIFI4G_ERROR };
 
 extern volatile uint8_t WIFI4G_CMD_Status;

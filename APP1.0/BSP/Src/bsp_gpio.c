@@ -1,3 +1,8 @@
+/**
+  * @brief  GPIO 输出驱动 (LED/BEEP/RELAY/RS485方向)
+  * @note   LED 低电平点亮 (PB9/PB8), BEEP 高电平开启 (PC13),
+  *         RELAY 高电平闭合 (PB1), RS485_DIR 高=发送低=接收 (PB2)
+  */
 #include "bsp_gpio.h"
 
 void GPIO_Init_Outputs(void)
@@ -55,6 +60,11 @@ void RS485_RxMode(void)
     GPIO_ResetBits(GPIOB, RS485_DIR_PIN);
 }
 
+/**
+  * @brief  根据寄存器值批量控制输出
+  * @param  val  REG_HOLD_BUF[0] 位域值
+  * @note   位0=LED1, 位1=LED2, 位2=BEEP, 位3=RELAY
+  */
 void Output_Control(uint16_t val)
 {
     LED1_Control((val & LED1_CMD) ? 1 : 0);

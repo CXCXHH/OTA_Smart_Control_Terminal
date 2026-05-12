@@ -3,6 +3,7 @@
 
 #include "stm32f10x.h"
 
+/* USART3: WiFi/4G AT 指令通信 (PB10-TX, PB11-RX) */
 void Usart3_Init(uint32_t baudrate);
 
 void Usart3_SendByte(uint8_t c);

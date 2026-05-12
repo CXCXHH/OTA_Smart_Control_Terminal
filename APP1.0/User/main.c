@@ -1,3 +1,8 @@
+/**
+  * @brief  应用层入口
+  * @note   板级初始化 → OLED 显示版本 → Modbus 从机初始化
+  *         → 创建 FreeRTOS 任务(传感器/Modbus/CANopen/MQTT) → 启动调度器
+  */
 #include "stm32f10x.h"
 #include "bsp.h"
 #include "FreeRTOS.h"

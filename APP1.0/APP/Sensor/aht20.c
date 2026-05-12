@@ -1,3 +1,9 @@
+/**
+  * @brief  AHT20 温湿度传感器驱动 (软件 I2C)
+  * @note   使用 IIC_WriteBuf/IIC_ReadBuf 实现寄存器读写
+  *         AHT20 地址 0x38 (左移1位=0x70)
+  *         温度返回单位: 度*100, 湿度返回单位: %RH*100
+  */
 #include "aht20.h"
 #include "bsp_iic.h"
 #include "bsp.h"

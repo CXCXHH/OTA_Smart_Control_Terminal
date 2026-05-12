@@ -417,106 +417,6 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>BSP</GroupName>
-          <Files>
-            <File>
-              <FileName>bsp.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\BSP\Src\bsp.c</FilePath>
-            </File>
-            <File>
-              <FileName>bsp_usart.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\BSP\Src\bsp_usart.c</FilePath>
-            </File>
-            <File>
-              <FileName>bsp_iic.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\BSP\Src\bsp_iic.c</FilePath>
-            </File>
-            <File>
-              <FileName>bsp_i2c_hw.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\BSP\Src\bsp_i2c_hw.c</FilePath>
-            </File>
-            <File>
-              <FileName>bsp_spi.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\BSP\Src\bsp_spi.c</FilePath>
-            </File>
-            <File>
-              <FileName>bsp_w25q64.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\BSP\Src\bsp_w25q64.c</FilePath>
-            </File>
-            <File>
-              <FileName>bsp_AT24C02.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\BSP\Src\bsp_AT24C02.c</FilePath>
-            </File>
-            <File>
-              <FileName>bsp_gpio.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\BSP\Src\bsp_gpio.c</FilePath>
-            </File>
-            <File>
-              <FileName>bsp_adc.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\BSP\Src\bsp_adc.c</FilePath>
-            </File>
-            <File>
-              <FileName>bsp_usart2.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\BSP\Src\bsp_usart2.c</FilePath>
-            </File>
-            <File>
-              <FileName>bsp_usart3.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\BSP\Src\bsp_usart3.c</FilePath>
-            </File>
-            <File>
-              <FileName>bsp_tim.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\BSP\Src\bsp_tim.c</FilePath>
-            </File>
-            <File>
-              <FileName>bsp_can.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\BSP\Src\bsp_can.c</FilePath>
-            </File>
-          </Files>
-        </Group>
-        <Group>
-          <GroupName>User</GroupName>
-          <Files>
-            <File>
-              <FileName>main.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\User\main.c</FilePath>
-            </File>
-            <File>
-              <FileName>delay.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\User\delay.c</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_conf.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\User\stm32f10x_conf.h</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_it.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\User\stm32f10x_it.c</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_it.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\User\stm32f10x_it.h</FilePath>
-            </File>
-          </Files>
-        </Group>
-        <Group>
           <GroupName>Library</GroupName>
           <Files>
             <File>
@@ -652,47 +552,102 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>APP</GroupName>
+          <GroupName>BSP</GroupName>
           <Files>
             <File>
-              <FileName>modbus_app.c</FileName>
+              <FileName>bsp.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\APP\modbus_app.c</FilePath>
+              <FilePath>.\BSP\Src\bsp.c</FilePath>
             </File>
             <File>
-              <FileName>app_tasks.c</FileName>
+              <FileName>bsp_adc.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\APP\app_tasks.c</FilePath>
+              <FilePath>.\BSP\Src\bsp_adc.c</FilePath>
             </File>
             <File>
-              <FileName>canopen_app.c</FileName>
+              <FileName>bsp_AT24C02.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\APP\canopen_app.c</FilePath>
+              <FilePath>.\BSP\Src\bsp_AT24C02.c</FilePath>
             </File>
             <File>
-              <FileName>mqtt.c</FileName>
+              <FileName>bsp_can.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\APP\mqtt.c</FilePath>
+              <FilePath>.\BSP\Src\bsp_can.c</FilePath>
             </File>
             <File>
-              <FileName>wifi4g.c</FileName>
+              <FileName>bsp_gpio.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\APP\wifi4g.c</FilePath>
+              <FilePath>.\BSP\Src\bsp_gpio.c</FilePath>
             </File>
             <File>
-              <FileName>fifo.c</FileName>
+              <FileName>bsp_i2c_hw.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\APP\fifo.c</FilePath>
+              <FilePath>.\BSP\Src\bsp_i2c_hw.c</FilePath>
             </File>
             <File>
-              <FileName>oled.c</FileName>
+              <FileName>bsp_iic.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\APP\oled.c</FilePath>
+              <FilePath>.\BSP\Src\bsp_iic.c</FilePath>
             </File>
             <File>
-              <FileName>ota.c</FileName>
+              <FileName>bsp_spi.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\APP\ota.c</FilePath>
+              <FilePath>.\BSP\Src\bsp_spi.c</FilePath>
+            </File>
+            <File>
+              <FileName>bsp_tim.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\BSP\Src\bsp_tim.c</FilePath>
+            </File>
+            <File>
+              <FileName>bsp_usart.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\BSP\Src\bsp_usart.c</FilePath>
+            </File>
+            <File>
+              <FileName>bsp_usart2.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\BSP\Src\bsp_usart2.c</FilePath>
+            </File>
+            <File>
+              <FileName>bsp_usart3.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\BSP\Src\bsp_usart3.c</FilePath>
+            </File>
+            <File>
+              <FileName>bsp_w25q64.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\BSP\Src\bsp_w25q64.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>User</GroupName>
+          <Files>
+            <File>
+              <FileName>main.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\main.c</FilePath>
+            </File>
+            <File>
+              <FileName>delay.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\delay.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f10x_conf.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\User\stm32f10x_conf.h</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f10x_it.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\stm32f10x_it.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f10x_it.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\User\stm32f10x_it.h</FilePath>
             </File>
           </Files>
         </Group>
@@ -717,6 +672,96 @@
           </Files>
         </Group>
         <Group>
+          <GroupName>APP</GroupName>
+          <Files>
+            <File>
+              <FileName>app_tasks.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\APP\app_tasks.c</FilePath>
+            </File>
+            <File>
+              <FileName>fifo.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\APP\fifo.c</FilePath>
+            </File>
+            <File>
+              <FileName>oled.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\APP\oled.c</FilePath>
+            </File>
+            <File>
+              <FileName>ota.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\APP\ota.c</FilePath>
+            </File>
+            <File>
+              <FileName>wifi4g.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\APP\wifi4g.c</FilePath>
+            </File>
+            <File>
+              <FileName>mqtt.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\APP\mqtt.c</FilePath>
+            </File>
+            <File>
+              <FileName>canopen_app.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\APP\canopen_app.c</FilePath>
+            </File>
+            <File>
+              <FileName>modbus_app.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\APP\modbus_app.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>Middleware/FreeRTOS</GroupName>
+          <Files>
+            <File>
+              <FileName>event_groups.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Middleware\FreeRTOS\event_groups.c</FilePath>
+            </File>
+            <File>
+              <FileName>heap_4.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Middleware\FreeRTOS\portable\MemMang\heap_4.c</FilePath>
+            </File>
+            <File>
+              <FileName>list.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Middleware\FreeRTOS\list.c</FilePath>
+            </File>
+            <File>
+              <FileName>port.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Middleware\FreeRTOS\portable\RVDS\ARM_CM3\port.c</FilePath>
+            </File>
+            <File>
+              <FileName>queue.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Middleware\FreeRTOS\queue.c</FilePath>
+            </File>
+            <File>
+              <FileName>stream_buffer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Middleware\FreeRTOS\stream_buffer.c</FilePath>
+            </File>
+            <File>
+              <FileName>tasks.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Middleware\FreeRTOS\tasks.c</FilePath>
+            </File>
+            <File>
+              <FileName>timers.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Middleware\FreeRTOS\timers.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
           <GroupName>Middleware/cJSON</GroupName>
           <Files>
             <File>
@@ -735,9 +780,9 @@
               <FilePath>.\Middleware\Canfestival\Src\canfestival.c</FilePath>
             </File>
             <File>
-              <FileName>TestSlave.c</FileName>
+              <FileName>lifegrd.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\Middleware\Canfestival\Src\TestSlave.c</FilePath>
+              <FilePath>.\Middleware\Canfestival\Src\lifegrd.c</FilePath>
             </File>
             <File>
               <FileName>nmtSlave.c</FileName>
@@ -745,14 +790,9 @@
               <FilePath>.\Middleware\Canfestival\Src\nmtSlave.c</FilePath>
             </File>
             <File>
-              <FileName>states.c</FileName>
+              <FileName>objacces.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\Middleware\Canfestival\Src\states.c</FilePath>
-            </File>
-            <File>
-              <FileName>sdo.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Middleware\Canfestival\Src\sdo.c</FilePath>
+              <FilePath>.\Middleware\Canfestival\Src\objacces.c</FilePath>
             </File>
             <File>
               <FileName>pdo.c</FileName>
@@ -760,19 +800,24 @@
               <FilePath>.\Middleware\Canfestival\Src\pdo.c</FilePath>
             </File>
             <File>
-              <FileName>objacces.c</FileName>
+              <FileName>sdo.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\Middleware\Canfestival\Src\objacces.c</FilePath>
+              <FilePath>.\Middleware\Canfestival\Src\sdo.c</FilePath>
+            </File>
+            <File>
+              <FileName>states.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Middleware\Canfestival\Src\states.c</FilePath>
+            </File>
+            <File>
+              <FileName>TestSlave.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Middleware\Canfestival\Src\TestSlave.c</FilePath>
             </File>
             <File>
               <FileName>timer.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Middleware\Canfestival\Src\timer.c</FilePath>
-            </File>
-            <File>
-              <FileName>lifegrd.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Middleware\Canfestival\Src\lifegrd.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -833,51 +878,6 @@
               <FileName>porttimer.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Protocol\FreeModbus\porttimer.c</FilePath>
-            </File>
-          </Files>
-        </Group>
-        <Group>
-          <GroupName>Middleware/FreeRTOS</GroupName>
-          <Files>
-            <File>
-              <FileName>tasks.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Middleware\FreeRTOS\tasks.c</FilePath>
-            </File>
-            <File>
-              <FileName>queue.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Middleware\FreeRTOS\queue.c</FilePath>
-            </File>
-            <File>
-              <FileName>list.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Middleware\FreeRTOS\list.c</FilePath>
-            </File>
-            <File>
-              <FileName>timers.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Middleware\FreeRTOS\timers.c</FilePath>
-            </File>
-            <File>
-              <FileName>event_groups.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Middleware\FreeRTOS\event_groups.c</FilePath>
-            </File>
-            <File>
-              <FileName>stream_buffer.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Middleware\FreeRTOS\stream_buffer.c</FilePath>
-            </File>
-            <File>
-              <FileName>port.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Middleware\FreeRTOS\portable\RVDS\ARM_CM3\port.c</FilePath>
-            </File>
-            <File>
-              <FileName>heap_4.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Middleware\FreeRTOS\portable\MemMang\heap_4.c</FilePath>
             </File>
           </Files>
         </Group>

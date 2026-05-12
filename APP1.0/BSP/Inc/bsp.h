@@ -9,6 +9,7 @@
 #include "stdio.h"
 #include "string.h"
 
+/* 外设驱动头文件 */
 #include "bsp_usart.h"
 #include "bsp_iic.h"
 #include "bsp_spi.h"

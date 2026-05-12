@@ -1,5 +1,10 @@
 #include "bsp_adc.h"
 
+/**
+  * @brief  ADC1 驱动 (PA1 电压 + 内部温度传感器)
+  * @note   ADC1_IN1 采集外部电压, 通道 TempSensor 采集 MCU 内部温度
+  *         10次采样平均, ADC 时钟 = 72MHz/6 = 12MHz
+  */
 void ADC1_Init(void)
 {
     GPIO_InitTypeDef GPIO_InitStructure;

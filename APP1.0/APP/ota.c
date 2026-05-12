@@ -1,3 +1,11 @@
+/**
+  * @brief  OTA 升级校验与回退
+  * @note   Bootloader 将固件写入 APP 分区后置 OTA_FLAG，
+  *         本函数在 APP 首次运行时校验 CRC32：
+  *         - CRC 正确 → 清除 OTA_FLAG，正常启动
+  *         - CRC 错误 → 置回退标记，下次 Bootloader 回滚旧版本
+  *         OTA 信息存储在 AT24C02 (I2C EEPROM)
+  */
 #include "ota.h"
 #include "bsp_AT24C02.h"
 #include "bsp.h"

@@ -1,6 +1,12 @@
 #include "bsp.h"
 #include "bsp_spi.h"
 
+/**
+  * @brief  SPI1 驱动 (主机模式, 连接 W25Q64 Flash)
+  * @note   PA5=SCK, PA6=MISO, PA7=MOSI
+  *         CPOL=Low, CPHA=1Edge, 最高速率 36MHz (SPI1=PCLK2/2)
+  *         CS 引脚由 bsp_w25q64.c 管理 (PA4)
+  */
 void SPI1_Init(void)
 {
     GPIO_InitTypeDef GPIO_InitStructure;

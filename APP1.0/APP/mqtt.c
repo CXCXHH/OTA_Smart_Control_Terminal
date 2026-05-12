@@ -1,3 +1,9 @@
+/**
+  * @brief  MQTT 客户端 (ESP8266 AT / ML307 4G)
+  * @note   通过 USART3 AT 指令驱动 WiFi/4G 模块，
+  *         支持 MQTT publish(上报传感器数据) / subscribe(接收下行控制)
+  *         使用 CPUID 作为客户端标识，构建独立 Topic
+  */
 #include "mqtt.h"
 #include "wifi4g.h"
 #include "bsp_usart3.h"
@@ -9,6 +15,7 @@
 
 volatile uint8_t MQTT_Download_Flag = 0;
 
+/** 读取 STM32 唯一 ID(96位) 作为 MQTT 客户端标识 */
 static uint8_t *Get_CPUID(void)
 {
     static uint8_t cpuid[32];
@@ -20,7 +27,14 @@ static uint8_t *Get_CPUID(void)
     return cpuid;
 }
 
+/** ESP8266 (WiFi) 方式连接 MQTT 服务器 */
 #if MQTT_WIFI_4G_ENABLE
+/**
+  * @brief  通过 ESP8266 AT 指令连接 MQTT (broker.emqx.io:1883)
+  * @note   步骤: MQTTUSERCFG → MQTTCONNCFG → MQTTCONN → MQTTSUB
+  *         客户端 ID 使用 CPUID 确保唯一性
+  *         订阅 Topic: STM32V9/DownLoad/{CPUID} (QoS 0)
+  */
 static uint8_t ESP8266_Connect_MQTTServer(void)
 {
     uint8_t buf[128];
@@ -87,7 +101,11 @@ static uint8_t ESP8266_Connect_MQTTServer(void)
     return 1;
 }
 #else
-
+/**
+  * @brief  通过 ML307 (4G Cat.1) AT 指令连接 MQTT
+  * @note   ML307 使用内部 MQTT AT 扩展指令集，
+  *         连接 / 订阅 / 发布一次完成配置
+  */
 static uint8_t ML307_Connect_MQTTServer(void)
 {
     uint8_t buf[128];
@@ -134,6 +152,10 @@ static uint8_t ML307_Connect_MQTTServer(void)
 }
 #endif
 
+/**
+  * @brief  MQTT 连接入口 (自动选择 ESP8266 或 ML307)
+  * @retval 1=连接成功, 0=失败
+  */
 uint8_t MQTT_Connect_Server(void)
 {
     uint8_t ok;
@@ -147,6 +169,14 @@ uint8_t MQTT_Connect_Server(void)
     return ok;
 }
 
+/**
+  * @brief  上报传感器数据 (JSON 格式)
+  * @note   ESP8266 使用 MQTTPUBRAW 发送原始数据
+  *         ML307 直接通过 USART3 发送 JSON 字符串
+  *         Topic: STM32V9/UPLoad/{CPUID}
+  *         数据: {"TP":温度, "RH":湿度, "VO":电压, "CU":电流,
+  *                "PW":功率, "VR":MCU电压, "CPU":MCU温度}
+  */
 uint8_t MQTT_SendData(void)
 {
 #if MQTT_WIFI_4G_ENABLE
@@ -186,6 +216,13 @@ uint8_t MQTT_SendData(void)
     return 1;
 }
 
+/**
+  * @brief  解析 MQTT 下行 JSON，控制输出
+  * @param  json  待解析的 JSON 字符串 (如 {"LED1":1,"BEEP":0})
+  * @retval 1=有输出变更, 0=无变更
+  * @note   支持的键: LED1, LED2, BEEP, RELAY
+  *         值 1/true = 打开, 0/false = 关闭
+  */
 uint8_t MQTT_Parse_JsonData(uint8_t *json)
 {
     static const struct {

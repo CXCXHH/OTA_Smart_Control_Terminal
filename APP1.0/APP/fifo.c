@@ -1,3 +1,9 @@
+/**
+  * @brief  环形 FIFO 缓冲 (字节流)
+  * @note   USART3 接收中断将字节压入 FIFO,
+  *         WIFI4G_Parse_Queue 弹出处理
+  *         FIFO_BUF_SIZE = 512, 满则丢弃
+  */
 #include "fifo.h"
 
 void FIFO_Init(FIFO_t *f)

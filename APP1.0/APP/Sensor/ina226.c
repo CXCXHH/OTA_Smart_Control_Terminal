@@ -1,3 +1,9 @@
+/**
+  * @brief  INA226 电压/电流/功率监测芯片驱动 (软件 I2C)
+  * @note   配置: 16次均值, 1.1ms转换时间, ~35ms/周期
+  *         校准寄存器 5120, 电流 LSB=0.1mA, 电压 LSB=1.25mV
+  *         总线地址 0x82 (即 0x41 << 1)
+  */
 #include "ina226.h"
 #include "bsp_iic.h"
 #include "delay.h"

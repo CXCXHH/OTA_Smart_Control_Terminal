@@ -1,3 +1,8 @@
+/**
+  * @brief  传感器应用层：周期性采集并分发数据
+  * @note   包含 AHT20(温湿度) + INA226(电流/电压/功率) + MCU内部ADC，
+  *         数据写入 REG_HOLD_BUF 经 Modbus/CANopen/MQTT 三协议共享
+  */
 #include "sensor_app.h"
 #include "aht20.h"
 #include "ina226.h"
@@ -42,6 +47,13 @@ void SensorApp_Init(void)
     U1_printf("Sensors OK\r\n");
 }
 
+/**
+  * @brief  周期性传感器采集 (500ms)
+  *         REG_HOLD_BUF 映射:
+  *           [1]=温度*100, [2]=湿度*100, [3]=电压*100,
+  *           [4]=电流mA, [5]=功率mW, [6]=MCU电压*100, [7]=MCU温度*100
+  *         每2次(约1s)更新一次 OLED 和串口日志
+  */
 void SensorApp_Process(void)
 {
     uint16_t temp, rh;

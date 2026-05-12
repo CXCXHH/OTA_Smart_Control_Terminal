@@ -1,3 +1,9 @@
+/**
+  * @brief  USART3 驱动 (WiFi/4G AT 指令通信)
+  * @note   PB10=TX, PB11=RX
+  *         连接 ESP8266(乐鑫) 或 ML307(中移物联) 模块
+  *         RXNE 中断将接收到的字节入 FIFO, 由 WIFI4G_Parse_Queue 处理
+  */
 #include "bsp_usart3.h"
 
 void Usart3_Init(uint32_t baudrate)

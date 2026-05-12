@@ -13,6 +13,9 @@ static uint8_t REG_COILS_BUF[REG_COILS_SIZE];
 
 static uint8_t ucSlaveAddr;
 
+/* ====== FreeModbus 回调函数: 操作共享寄存器 REG_HOLD_BUF ====== */
+/* REG_HOLD_BUF 同时被 Modbus/CANopen/MQTT 三协议共享，实现寄存器级互通 */
+
 /* ------- Coils (FC1/5/15) - primary output control, matches reference ------- */
 eMBErrorCode eMBRegCoilsCB(UCHAR *pucRegBuffer, USHORT usAddress,
                             USHORT usNCoils, eMBRegisterMode eMode)
@@ -116,6 +119,12 @@ eMBErrorCode eMBRegHoldingCB(UCHAR *pucRegBuffer, USHORT usAddress,
     return MB_ENOERR;
 }
 
+/**
+  * @brief  初始化 Modbus RTU 从机
+  * @param  slave_addr  从机地址(1-247)
+  * @note   波特率 115200, 无校验, 使用 USART2 + TIM3,
+  *         由 FreeModbus portserial/porttimer 驱动
+  */
 void Modbus_Init(uint8_t slave_addr)
 {
     ucSlaveAddr = slave_addr;
@@ -123,8 +132,12 @@ void Modbus_Init(uint8_t slave_addr)
     eMBEnable();
 }
 
-/* Match reference: poll outputs from REG_HOLD_BUF[0] bits (secondary)
-   AND coils REG_COILS_BUF (primary). Coils override holding bits. */
+/**
+  * @brief  根据寄存器值刷新物理输出
+  * @note   输出优先级: Coils(FC5/FC15) > Holding[0] 位域
+  *         Coils 由 Modbus 协议直接写入，Holding[0] 来自 MQTT/CANopen
+  *         两者 OR 组合后驱动 LED/BEEP/RELAY
+  */
 void Modbus_Parse(void)
 {
     /* Coils control individual outputs (primary, FC5) */
@@ -134,6 +147,9 @@ void Modbus_Parse(void)
     RELAY_Control(REG_COILS_BUF[3] || (REG_HOLD_BUF[0] & RELAY_CMD));
 }
 
+/**
+  * @brief  Modbus 任务主循环：协议轮询 + 输出刷新
+  */
 void Modbus_Task(void)
 {
     eMBPoll();

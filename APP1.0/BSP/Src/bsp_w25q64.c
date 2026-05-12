@@ -49,7 +49,9 @@ void W25Q64_WriteEnable(void)
 	W25Q64_CS_HIGH();
 }
 
-/* 初始化 W25Q64 */
+/**
+  * @brief  初始化 W25Q64
+  */
 uint8_t W25Q64_Init(void)
 {
 	SPI1_Init();
@@ -61,7 +63,12 @@ uint8_t W25Q64_Init(void)
 	return 0;
 }
 
-/* 读取数据 */
+/**
+  * @brief  读取 W25Q64 数据
+  * @param  addr  24bit 地址 (0 ~ 8MB-1)
+  * @param  buf   数据缓冲
+  * @param  len   读取长度
+  */
 void W25Q64_Read(uint32_t addr, uint8_t *buf, uint32_t len)
 {
 	uint32_t i;
@@ -76,7 +83,10 @@ void W25Q64_Read(uint32_t addr, uint8_t *buf, uint32_t len)
 	W25Q64_CS_HIGH();
 }
 
-/* 页写入 (一页 256B) */
+/**
+  * @brief  页写入 (256B/页)
+  * @note   写入前需要先擦除所在扇区
+  */
 void W25Q64_PageProgram(uint32_t addr, const uint8_t *buf, uint16_t len)
 {
 	uint16_t i;
@@ -93,7 +103,10 @@ void W25Q64_PageProgram(uint32_t addr, const uint8_t *buf, uint16_t len)
 	W25Q64_WaitBusy();
 }
 
-/* 擦除一个 64KB 块 */
+/**
+  * @brief  擦除 64KB 块
+  * @param  addr  块内任意地址
+  */
 void W25Q64_EraseBlock64K(uint32_t addr)
 {
 	W25Q64_WriteEnable();

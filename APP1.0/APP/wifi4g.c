@@ -1,3 +1,9 @@
+/**
+  * @brief  WiFi/4G AT 指令框架
+  * @note   通过 USART3 + FIFO 实现 AT 命令的发送/响应解析
+  *         支持同步等待模式 (Test_WIFI4G_CMD_Status)，
+  *         响应匹配通过 Parse_Substr 字符串实现
+  */
 #include "wifi4g.h"
 #include "bsp_usart3.h"
 #include "bsp.h"
@@ -12,6 +18,11 @@ FIFO_t UART3_FIFO;
 #define NSize 512
 static uint8_t RecvBuf[NSize];
 
+/**
+  * @brief  等待 AT 命令响应 (阻塞)
+  * @param  timeout_ms  超时时间 (ms)
+  * @retval WIFI4G_OK=收到匹配, WIFI4G_ERROR=收到ERROR, WIFI4G_NOT=超时
+  */
 uint8_t Test_WIFI4G_CMD_Status(uint32_t timeout_ms)
 {
     while (WIFI4G_CMD_Status == WIFI4G_NOT)
@@ -23,6 +34,14 @@ uint8_t Test_WIFI4G_CMD_Status(uint32_t timeout_ms)
     return WIFI4G_CMD_Status;
 }
 
+/**
+  * @brief  解析 USART3 FIFO 接收队列
+  * @note   功能:
+  *         1. 将 FIFO 数据搬移到 RecvBuf 并打印
+  *         2. 检测 MQTT 连接/断开状态
+  *         3. 匹配命令响应 (Parse_Substr) 或 ERROR
+  *         4. 检测 MQTT 下行 JSON 数据并解析
+  */
 uint8_t WIFI4G_Parse_Queue(void)
 {
     uint8_t c;
@@ -61,6 +80,11 @@ uint8_t WIFI4G_Parse_Queue(void)
     return WIFI4G_NOT;
 }
 
+/**
+  * @brief  连接 WiFi (ESP8266)
+  * @note   步骤: AT+CWMODE=1 → AT+CWJAP(检查已有连接)
+  *         → 若未连接则启动 SmartConfig 配网 (超时 200s)
+  */
 uint8_t ESP8266_Connect_WIFI(void)
 {
     uint8_t buf[64];

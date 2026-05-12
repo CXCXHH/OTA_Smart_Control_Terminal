@@ -15,11 +15,11 @@ typedef struct
     uint8_t *end;     /* 帧结束地址 */
 } UCB_URxBuffptr;
 
-/* USART1 接收控制块 */
+/* USART1 DMA + 空闲中断 帧接收控制块 */
 typedef struct
 {
     uint16_t URxCounter;            /* 当前接收写入位置 */
-    UCB_URxBuffptr UrxDataPtr[NUM]; /* 帧描述符数组 */
+    UCB_URxBuffptr UrxDataPtr[NUM]; /* 帧描述符环形队列 */
     UCB_URxBuffptr *URxDataIN;      /* 写入指针 */
     UCB_URxBuffptr *URxDataOUT;     /* 读取指针 */
     UCB_URxBuffptr *URxDataEND;     /* 队列尾指针 */
