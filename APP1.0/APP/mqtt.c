@@ -102,9 +102,8 @@ static uint8_t ESP8266_Connect_MQTTServer(void)
 }
 #else
 /**
-  * @brief  通过 ML307 (4G Cat.1) AT 指令连接 MQTT
-  * @note   ML307 使用内部 MQTT AT 扩展指令集，
-  *         连接 / 订阅 / 发布一次完成配置
+  * @brief  通过 ML307 连接 xthings.cloud (教程方式)
+  * @note   MQMULTEN → MQTTFILTER → MQSUBM → MQPUBM → REST
   */
 static uint8_t ML307_Connect_MQTTServer(void)
 {
@@ -112,32 +111,22 @@ static uint8_t ML307_Connect_MQTTServer(void)
 
     strcpy((char *)Parse_Substr, "OK\r\n");
     WIFI4G_CMD_Status = WIFI4G_NOT;
-    sprintf((char *)buf, "AT+DTUTASK=\"1\",\"20\"\r\n");
+    strcpy((char *)buf, "AT+MQMULTEN=1\r\n");
     Usart3_SendBuf(buf, strlen((char *)buf));
     if (Test_WIFI4G_CMD_Status(1000) == WIFI4G_ERROR) return 0;
 
     WIFI4G_CMD_Status = WIFI4G_NOT;
-    sprintf((char *)buf, "AT+MQTT=\"%s\"\r\n", Get_CPUID());
+    strcpy((char *)buf, "AT+MQTTFILTER=0\r\n");
     Usart3_SendBuf(buf, strlen((char *)buf));
     if (Test_WIFI4G_CMD_Status(1000) == WIFI4G_ERROR) return 0;
 
     WIFI4G_CMD_Status = WIFI4G_NOT;
-    strcpy((char *)buf, "AT+MQTTIP=\"broker.emqx.io\",\"1883\"\r\n");
+    sprintf((char *)buf, "AT+MQSUBM=0,1,0,4,\"v1/devices/me/attributes\"\r\n");
     Usart3_SendBuf(buf, strlen((char *)buf));
     if (Test_WIFI4G_CMD_Status(1000) == WIFI4G_ERROR) return 0;
 
     WIFI4G_CMD_Status = WIFI4G_NOT;
-    sprintf((char *)buf, "AT+MQSUB=\"1\",\"1\",\"4\",\"STM32V9/DownLoad/%s\"\r\n", Get_CPUID());
-    Usart3_SendBuf(buf, strlen((char *)buf));
-    if (Test_WIFI4G_CMD_Status(1000) == WIFI4G_ERROR) return 0;
-
-    WIFI4G_CMD_Status = WIFI4G_NOT;
-    sprintf((char *)buf, "AT+MQPUB=\"1\",\"1\",\"4\",\"STM32V9/UPLoad/%s\"\r\n", Get_CPUID());
-    Usart3_SendBuf(buf, strlen((char *)buf));
-    if (Test_WIFI4G_CMD_Status(1000) == WIFI4G_ERROR) return 0;
-
-    WIFI4G_CMD_Status = WIFI4G_NOT;
-    strcpy((char *)buf, "AT+MQMULTEN=0\r\n");
+    sprintf((char *)buf, "AT+MQSUBM=1,1,0,4,\"v1/devices/me/rpc/request/+\"\r\n");
     Usart3_SendBuf(buf, strlen((char *)buf));
     if (Test_WIFI4G_CMD_Status(1000) == WIFI4G_ERROR) return 0;
 
@@ -145,9 +134,7 @@ static uint8_t ML307_Connect_MQTTServer(void)
     strcpy((char *)Parse_Substr, "MQTT_CONNECT:");
     strcpy((char *)buf, "AT+REST\r\n");
     Usart3_SendBuf(buf, strlen((char *)buf));
-    if (Test_WIFI4G_CMD_Status(180000) == WIFI4G_ERROR) return 0;
-
-    U1_printf("MQTT Server OK\r\n");
+    { uint8_t _i; const char _s[] = "MQTT Server OK\r\n"; for (_i = 0; _s[_i]; _i++) { while(!(USART1->SR & 0x80)); USART1->DR = _s[_i]; } }
     return 1;
 }
 #endif
@@ -206,9 +193,8 @@ uint8_t MQTT_SendData(void)
         return 0;
 #else
     uint8_t buf[256];
-
     sprintf((char *)buf,
-        "{\"TP\":%d,\"RH\":%d,\"VO\":%d,\"CU\":%d,\"PW\":%d,\"VR\":%d,\"CPU\":%d}",
+        "MQPUB,1,v1/devices/me/telemetry,{TP:%d,RH:%d,VO:%d,CU:%d,PW:%d,VR:%d,CPU:%d}",
         REG_HOLD_BUF[1], REG_HOLD_BUF[2], REG_HOLD_BUF[3],
         REG_HOLD_BUF[4], REG_HOLD_BUF[5], REG_HOLD_BUF[6], REG_HOLD_BUF[7]);
     Usart3_SendBuf(buf, strlen((char *)buf));

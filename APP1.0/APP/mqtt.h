@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define MQTT_WIFI_4G_ENABLE  1  /* 1=ESP8266(WiFi), 0=ML307(4G Cat.1) */
+#define MQTT_WIFI_4G_ENABLE  0  /* 1=ESP8266(WiFi), 0=ML307(4G Cat.1) */
 
 extern volatile uint8_t MQTT_Download_Flag;
 
