@@ -6,6 +6,17 @@
 #define REG_HOLD_SIZE   10
 #define REG_INPUT_SIZE  10
 
+/* Shared register index macros for REG_HOLD_BUF */
+#define REG_IDX_OUTPUT      0
+#define REG_IDX_TEMP        1
+#define REG_IDX_HUMI        2
+#define REG_IDX_DEV_VOLT    3
+#define REG_IDX_DEV_CURR    4
+#define REG_IDX_DEV_POWER   5
+#define REG_IDX_SYS_VOLT    6
+#define REG_IDX_CPU_TEMP    7
+#define REG_IDX_SLAVE_ADDR  9
+
 extern uint16_t REG_HOLD_BUF[REG_HOLD_SIZE];
 extern volatile uint8_t Modify_SlaveAdress_Flag;
 

@@ -178,7 +178,7 @@ void Modbus_Parse(void)
     coil1 = REG_COILS_BUF[1];
     coil2 = REG_COILS_BUF[2];
     coil3 = REG_COILS_BUF[3];
-    hold0 = REG_HOLD_BUF[0];
+    hold0 = REG_HOLD_BUF[REG_IDX_OUTPUT];
     REG_Unlock();
 
     /* Coils control individual outputs (primary, FC5) */

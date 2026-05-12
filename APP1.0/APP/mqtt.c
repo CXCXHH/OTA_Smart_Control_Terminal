@@ -179,13 +179,13 @@ uint8_t MQTT_SendData(void)
 #endif
 
     REG_Lock();
-    r1 = REG_HOLD_BUF[1];
-    r2 = REG_HOLD_BUF[2];
-    r3 = REG_HOLD_BUF[3];
-    r4 = REG_HOLD_BUF[4];
-    r5 = REG_HOLD_BUF[5];
-    r6 = REG_HOLD_BUF[6];
-    r7 = REG_HOLD_BUF[7];
+    r1 = REG_HOLD_BUF[REG_IDX_TEMP];
+    r2 = REG_HOLD_BUF[REG_IDX_HUMI];
+    r3 = REG_HOLD_BUF[REG_IDX_DEV_VOLT];
+    r4 = REG_HOLD_BUF[REG_IDX_DEV_CURR];
+    r5 = REG_HOLD_BUF[REG_IDX_DEV_POWER];
+    r6 = REG_HOLD_BUF[REG_IDX_SYS_VOLT];
+    r7 = REG_HOLD_BUF[REG_IDX_CPU_TEMP];
     REG_Unlock();
 
 #if MQTT_WIFI_4G_ENABLE
@@ -275,21 +275,21 @@ uint8_t MQTT_Parse_DeviceData(uint8_t *json, uint32_t request_id)
 
     if (strcmp(method->valuestring, "led1Status") == 0) {
         REG_Lock();
-        state = (REG_HOLD_BUF[0] & LED1_CMD) ? 1 : 0;
+        state = (REG_HOLD_BUF[REG_IDX_OUTPUT] & LED1_CMD) ? 1 : 0;
         REG_Unlock();
         MQTT_SendRpcResponse(request_id, state ? "true" : "false");
         cJSON_Delete(root);
         return 1;
     } else if (strcmp(method->valuestring, "beepStatus") == 0) {
         REG_Lock();
-        state = (REG_HOLD_BUF[0] & BEEP_CMD) ? 1 : 0;
+        state = (REG_HOLD_BUF[REG_IDX_OUTPUT] & BEEP_CMD) ? 1 : 0;
         REG_Unlock();
         MQTT_SendRpcResponse(request_id, state ? "true" : "false");
         cJSON_Delete(root);
         return 1;
     } else if (strcmp(method->valuestring, "relayStatus") == 0) {
         REG_Lock();
-        state = (REG_HOLD_BUF[0] & RELAY_CMD) ? 1 : 0;
+        state = (REG_HOLD_BUF[REG_IDX_OUTPUT] & RELAY_CMD) ? 1 : 0;
         REG_Unlock();
         MQTT_SendRpcResponse(request_id, state ? "true" : "false");
         cJSON_Delete(root);
@@ -322,25 +322,25 @@ uint8_t MQTT_Parse_DeviceData(uint8_t *json, uint32_t request_id)
     if (strcmp(method->valuestring, "led1Set") == 0) {
         REG_Lock();
         if (state)
-            REG_HOLD_BUF[0] |= LED1_CMD;
+            REG_HOLD_BUF[REG_IDX_OUTPUT] |= LED1_CMD;
         else
-            REG_HOLD_BUF[0] &= (uint16_t)~LED1_CMD;
+            REG_HOLD_BUF[REG_IDX_OUTPUT] &= (uint16_t)~LED1_CMD;
         REG_Unlock();
         changed = 1;
     } else if (strcmp(method->valuestring, "beepSet") == 0) {
         REG_Lock();
         if (state)
-            REG_HOLD_BUF[0] |= BEEP_CMD;
+            REG_HOLD_BUF[REG_IDX_OUTPUT] |= BEEP_CMD;
         else
-            REG_HOLD_BUF[0] &= (uint16_t)~BEEP_CMD;
+            REG_HOLD_BUF[REG_IDX_OUTPUT] &= (uint16_t)~BEEP_CMD;
         REG_Unlock();
         changed = 1;
     } else if (strcmp(method->valuestring, "relaySet") == 0) {
         REG_Lock();
         if (state)
-            REG_HOLD_BUF[0] |= RELAY_CMD;
+            REG_HOLD_BUF[REG_IDX_OUTPUT] |= RELAY_CMD;
         else
-            REG_HOLD_BUF[0] &= (uint16_t)~RELAY_CMD;
+            REG_HOLD_BUF[REG_IDX_OUTPUT] &= (uint16_t)~RELAY_CMD;
         REG_Unlock();
         changed = 1;
     }
@@ -349,7 +349,7 @@ uint8_t MQTT_Parse_DeviceData(uint8_t *json, uint32_t request_id)
         uint16_t hold0;
 
         REG_Lock();
-        hold0 = REG_HOLD_BUF[0];
+        hold0 = REG_HOLD_BUF[REG_IDX_OUTPUT];
         REG_Unlock();
         Output_Control(hold0);
         U1_printf("RPC hold0=%04X\r\n", hold0);
@@ -394,15 +394,15 @@ uint8_t MQTT_Parse_JsonData(uint8_t *json)
         while ((*p == ' ') || (*p == '\t'))
             p++;
         if ((*p == '1') || (strncmp(p, "true", 4) == 0)) {
-            REG_HOLD_BUF[0] |= cmds[i].mask;
+            REG_HOLD_BUF[REG_IDX_OUTPUT] |= cmds[i].mask;
             changed = 1;
         } else if ((*p == '0') || (strncmp(p, "false", 5) == 0)) {
-            REG_HOLD_BUF[0] &= (uint16_t)~cmds[i].mask;
+            REG_HOLD_BUF[REG_IDX_OUTPUT] &= (uint16_t)~cmds[i].mask;
             changed = 1;
         }
     }
     if (changed) {
-        uint16_t hold0 = REG_HOLD_BUF[0];
+        uint16_t hold0 = REG_HOLD_BUF[REG_IDX_OUTPUT];
         REG_Unlock();
         Output_Control(hold0);
     } else {

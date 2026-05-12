@@ -73,18 +73,18 @@ void SensorApp_Process(void)
     REG_Lock();
     if (aht_ret == 0)
     {
-        REG_HOLD_BUF[1] = temp;
-        REG_HOLD_BUF[2] = rh;
+        REG_HOLD_BUF[REG_IDX_TEMP] = temp;
+        REG_HOLD_BUF[REG_IDX_HUMI] = rh;
     }
-    REG_HOLD_BUF[3] = ina_bus / 8;
-    REG_HOLD_BUF[4] = ina_current / 10;
-    REG_HOLD_BUF[5] = (uint16_t)((ina_power * 5UL) / 2UL);
-    REG_HOLD_BUF[6] = adc_voltage;
-    REG_HOLD_BUF[7] = adc_temp;
+    REG_HOLD_BUF[REG_IDX_DEV_VOLT] = ina_bus / 8;
+    REG_HOLD_BUF[REG_IDX_DEV_CURR] = ina_current / 10;
+    REG_HOLD_BUF[REG_IDX_DEV_POWER] = (uint16_t)((ina_power * 5UL) / 2UL);
+    REG_HOLD_BUF[REG_IDX_SYS_VOLT] = adc_voltage;
+    REG_HOLD_BUF[REG_IDX_CPU_TEMP] = adc_temp;
     /* snapshot for non-critical display (avoid long lock for OLED/printf) */
-    v3 = REG_HOLD_BUF[3];
-    v4 = REG_HOLD_BUF[4];
-    v5 = REG_HOLD_BUF[5];
+    v3 = REG_HOLD_BUF[REG_IDX_DEV_VOLT];
+    v4 = REG_HOLD_BUF[REG_IDX_DEV_CURR];
+    v5 = REG_HOLD_BUF[REG_IDX_DEV_POWER];
     REG_Unlock();
 
     if (++print_cnt >= 4)
