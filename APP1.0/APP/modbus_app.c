@@ -162,12 +162,27 @@ void Modbus_Init(uint8_t slave_addr)
 }
 
 /**
-  * @brief  根据寄存器值刷新物理输出
+  * @brief  根据输出快照刷新物理输出
   * @note   输出优先级: Coils(FC5/FC15) > Holding[0] 位域
   *         Coils 由 Modbus 协议直接写入，Holding[0] 来自 MQTT/CANopen
   *         两者 OR 组合后驱动 LED/BEEP/RELAY
   */
-void Modbus_Parse(void)
+void App_Output_ApplySnapshot(uint16_t hold0,
+                              uint8_t coil0,
+                              uint8_t coil1,
+                              uint8_t coil2,
+                              uint8_t coil3)
+{
+    LED1_Control(coil0 || (hold0 & LED1_CMD));
+    LED2_Control(coil1 || (hold0 & LED2_CMD));
+    BEEP_Control(coil2  || (hold0 & BEEP_CMD));
+    RELAY_Control(coil3 || (hold0 & RELAY_CMD));
+}
+
+/**
+  * @brief  从共享寄存器获取统一输出快照并刷新物理输出
+  */
+void App_Output_RefreshFromSharedRegs(void)
 {
     uint8_t coil0, coil1, coil2, coil3;
     uint16_t hold0;
@@ -181,11 +196,16 @@ void Modbus_Parse(void)
     hold0 = REG_HOLD_BUF[REG_IDX_OUTPUT];
     REG_Unlock();
 
-    /* Coils control individual outputs (primary, FC5) */
-    LED1_Control(coil0 || (hold0 & LED1_CMD));
-    LED2_Control(coil1 || (hold0 & LED2_CMD));
-    BEEP_Control(coil2  || (hold0 & BEEP_CMD));
-    RELAY_Control(coil3 || (hold0 & RELAY_CMD));
+    App_Output_ApplySnapshot(hold0, coil0, coil1, coil2, coil3);
+}
+
+/**
+  * @brief  根据寄存器值刷新物理输出
+  * @note   兼容原有 Modbus 输出刷新入口
+  */
+void Modbus_Parse(void)
+{
+    App_Output_RefreshFromSharedRegs();
 }
 
 /**

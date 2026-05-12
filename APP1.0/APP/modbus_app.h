@@ -23,6 +23,12 @@ extern volatile uint8_t Modify_SlaveAdress_Flag;
 void Modbus_Init(uint8_t slave_addr);
 void Modbus_Task(void);
 void Modbus_Parse(void);
+void App_Output_ApplySnapshot(uint16_t hold0,
+                              uint8_t coil0,
+                              uint8_t coil1,
+                              uint8_t coil2,
+                              uint8_t coil3);
+void App_Output_RefreshFromSharedRegs(void);
 
 /* Shared register mutex API - protects REG_HOLD_BUF and REG_COILS_BUF */
 void REG_Lock_Init(void);

@@ -22,7 +22,8 @@ Keil 路径：
 
 最近关键提交：
 
-- `待提交 fix: 修复 CANopen 中断上下文写共享寄存器控制失效`
+- `待提交 refactor: 统一三协议输出刷新入口`
+- `fe38942 fix: 修复CANopen中断上下文控制回写并同步任务记忆`
 - `c31d4ec fix: 固化共享寄存器索引映射`
 - `f5865bc 增加任务间共享寄存器互斥锁`
 - `d1a6e33 fix app mqtt rpc control`
@@ -46,6 +47,7 @@ Keil 路径：
 - 用户实测：协议之间运行顺滑，互斥锁改动无明显问题。
 - 任务 1 已完成：共享寄存器索引宏已固化，`sensor_app.c`、`mqtt.c`、`modbus_app.c` 关键下标已替换为 `REG_IDX_*`。
 - 任务 2 已完成：CANopen `0x2000` 已改为任务上下文同步快照读取，控制/从机地址写入改为 ISR 安全的延后应用，用户实测 CAN 控制恢复正常。
+- 任务 3 已完成：MQTT、Modbus、CANopen 已统一走共享寄存器输出刷新入口，保持 Modbus coils 与 holding 输出组合逻辑一致。
 
 ## 当前代码结构重点
 
@@ -148,6 +150,10 @@ FreeRTOS 当前任务：
 - 使用 CANopen 写输出位后，`led1`、`beep`、`relay` 状态变化。
 
 ### 3. 整理输出控制入口
+
+状态：
+
+- 已完成（本轮提交待生成）。
 
 目标：
 
@@ -337,7 +343,7 @@ git status --short
 3. 再读 `APP1.0/APP/modbus_app.c/.h`，理解共享寄存器和互斥锁。
 4. 再读 `APP1.0/APP/mqtt.c`，理解遥测和 RPC 控制。
 5. 再读 `APP1.0/APP/Sensor/sensor_app.c`，理解传感器数据来源。
-6. 下一步优先做“整理输出控制入口”。
+6. 下一步优先做“完善 OTA APP 侧下载到 W25Q64”。
 
 当前不建议立刻做的大改：
 

@@ -62,7 +62,7 @@ static void Canopen_ApplyPendingRequests(void)
     REG_Unlock();
 
     if (need_output_refresh)
-        Output_Control(hold0);
+        App_Output_RefreshFromSharedRegs();
 }
 
 static void Canopen_SyncDeviceInfoSnapshot(void)

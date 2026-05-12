@@ -351,7 +351,7 @@ uint8_t MQTT_Parse_DeviceData(uint8_t *json, uint32_t request_id)
         REG_Lock();
         hold0 = REG_HOLD_BUF[REG_IDX_OUTPUT];
         REG_Unlock();
-        Output_Control(hold0);
+        App_Output_RefreshFromSharedRegs();
         U1_printf("RPC hold0=%04X\r\n", hold0);
         MQTT_SendRpcResponse(request_id, state ? "true" : "false");
     }
@@ -402,9 +402,8 @@ uint8_t MQTT_Parse_JsonData(uint8_t *json)
         }
     }
     if (changed) {
-        uint16_t hold0 = REG_HOLD_BUF[REG_IDX_OUTPUT];
         REG_Unlock();
-        Output_Control(hold0);
+        App_Output_RefreshFromSharedRegs();
     } else {
         REG_Unlock();
     }
