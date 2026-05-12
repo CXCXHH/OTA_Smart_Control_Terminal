@@ -169,15 +169,29 @@ uint8_t MQTT_Connect_Server(void)
   */
 uint8_t MQTT_SendData(void)
 {
+    uint16_t r1, r2, r3, r4, r5, r6, r7;   /* local snapshot */
 #if MQTT_WIFI_4G_ENABLE
     uint8_t cmd[128];
     uint8_t payload[128];
     uint16_t len;
+#else
+    uint8_t buf[256];
+#endif
 
+    REG_Lock();
+    r1 = REG_HOLD_BUF[1];
+    r2 = REG_HOLD_BUF[2];
+    r3 = REG_HOLD_BUF[3];
+    r4 = REG_HOLD_BUF[4];
+    r5 = REG_HOLD_BUF[5];
+    r6 = REG_HOLD_BUF[6];
+    r7 = REG_HOLD_BUF[7];
+    REG_Unlock();
+
+#if MQTT_WIFI_4G_ENABLE
     sprintf((char *)payload,
         "{\"TP\":%d,\"RH\":%d,\"VO\":%d,\"CU\":%d,\"PW\":%d,\"VR\":%d,\"CPU\":%d}",
-        REG_HOLD_BUF[1], REG_HOLD_BUF[2], REG_HOLD_BUF[3],
-        REG_HOLD_BUF[4], REG_HOLD_BUF[5], REG_HOLD_BUF[6], REG_HOLD_BUF[7]);
+        r1, r2, r3, r4, r5, r6, r7);
     len = strlen((char *)payload);
 
     sprintf((char *)cmd,
@@ -195,11 +209,9 @@ uint8_t MQTT_SendData(void)
     if (Test_WIFI4G_CMD_Status(5000) != WIFI4G_OK)
         return 0;
 #else
-    uint8_t buf[256];
     sprintf((char *)buf,
         "MQPUB,1,v1/devices/me/telemetry,{TP:%d,RH:%d,VO:%d,CU:%d,PW:%d,VR:%d,CPU:%d}",
-        REG_HOLD_BUF[1], REG_HOLD_BUF[2], REG_HOLD_BUF[3],
-        REG_HOLD_BUF[4], REG_HOLD_BUF[5], REG_HOLD_BUF[6], REG_HOLD_BUF[7]);
+        r1, r2, r3, r4, r5, r6, r7);
     Usart3_SendBuf(buf, strlen((char *)buf));
 #endif
     return 1;
@@ -262,17 +274,23 @@ uint8_t MQTT_Parse_DeviceData(uint8_t *json, uint32_t request_id)
     U1_printf("RPC method=%s\r\n", method->valuestring);
 
     if (strcmp(method->valuestring, "led1Status") == 0) {
+        REG_Lock();
         state = (REG_HOLD_BUF[0] & LED1_CMD) ? 1 : 0;
+        REG_Unlock();
         MQTT_SendRpcResponse(request_id, state ? "true" : "false");
         cJSON_Delete(root);
         return 1;
     } else if (strcmp(method->valuestring, "beepStatus") == 0) {
+        REG_Lock();
         state = (REG_HOLD_BUF[0] & BEEP_CMD) ? 1 : 0;
+        REG_Unlock();
         MQTT_SendRpcResponse(request_id, state ? "true" : "false");
         cJSON_Delete(root);
         return 1;
     } else if (strcmp(method->valuestring, "relayStatus") == 0) {
+        REG_Lock();
         state = (REG_HOLD_BUF[0] & RELAY_CMD) ? 1 : 0;
+        REG_Unlock();
         MQTT_SendRpcResponse(request_id, state ? "true" : "false");
         cJSON_Delete(root);
         return 1;
@@ -302,28 +320,39 @@ uint8_t MQTT_Parse_DeviceData(uint8_t *json, uint32_t request_id)
     }
 
     if (strcmp(method->valuestring, "led1Set") == 0) {
+        REG_Lock();
         if (state)
             REG_HOLD_BUF[0] |= LED1_CMD;
         else
             REG_HOLD_BUF[0] &= (uint16_t)~LED1_CMD;
+        REG_Unlock();
         changed = 1;
     } else if (strcmp(method->valuestring, "beepSet") == 0) {
+        REG_Lock();
         if (state)
             REG_HOLD_BUF[0] |= BEEP_CMD;
         else
             REG_HOLD_BUF[0] &= (uint16_t)~BEEP_CMD;
+        REG_Unlock();
         changed = 1;
     } else if (strcmp(method->valuestring, "relaySet") == 0) {
+        REG_Lock();
         if (state)
             REG_HOLD_BUF[0] |= RELAY_CMD;
         else
             REG_HOLD_BUF[0] &= (uint16_t)~RELAY_CMD;
+        REG_Unlock();
         changed = 1;
     }
 
     if (changed) {
-        Output_Control(REG_HOLD_BUF[0]);
-        U1_printf("RPC hold0=%04X\r\n", REG_HOLD_BUF[0]);
+        uint16_t hold0;
+
+        REG_Lock();
+        hold0 = REG_HOLD_BUF[0];
+        REG_Unlock();
+        Output_Control(hold0);
+        U1_printf("RPC hold0=%04X\r\n", hold0);
         MQTT_SendRpcResponse(request_id, state ? "true" : "false");
     }
 
@@ -353,6 +382,7 @@ uint8_t MQTT_Parse_JsonData(uint8_t *json)
     uint8_t i;
     uint8_t changed = 0;
 
+    REG_Lock();
     for (i = 0; i < (sizeof(cmds) / sizeof(cmds[0])); i++) {
         p = strstr((char *)json, cmds[i].key);
         if (p == NULL)
@@ -363,16 +393,20 @@ uint8_t MQTT_Parse_JsonData(uint8_t *json)
         p++;
         while ((*p == ' ') || (*p == '\t'))
             p++;
-        if ((*p == '1') || (strncmp(p, "true", 4) == 0))
+        if ((*p == '1') || (strncmp(p, "true", 4) == 0)) {
             REG_HOLD_BUF[0] |= cmds[i].mask;
-        else if ((*p == '0') || (strncmp(p, "false", 5) == 0))
+            changed = 1;
+        } else if ((*p == '0') || (strncmp(p, "false", 5) == 0)) {
             REG_HOLD_BUF[0] &= (uint16_t)~cmds[i].mask;
-        else
-            continue;
-        changed = 1;
+            changed = 1;
+        }
     }
-
-    if (changed)
-        Output_Control(REG_HOLD_BUF[0]);
+    if (changed) {
+        uint16_t hold0 = REG_HOLD_BUF[0];
+        REG_Unlock();
+        Output_Control(hold0);
+    } else {
+        REG_Unlock();
+    }
     return changed;
 }

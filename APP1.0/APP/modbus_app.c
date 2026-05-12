@@ -3,6 +3,8 @@
 #include "mbport.h"
 #include "bsp_gpio.h"
 #include "bsp.h"
+#include "FreeRTOS.h"
+#include "semphr.h"
 
 uint16_t REG_HOLD_BUF[REG_HOLD_SIZE];
 volatile uint8_t Modify_SlaveAdress_Flag = 0;
@@ -12,6 +14,27 @@ volatile uint8_t Modify_SlaveAdress_Flag = 0;
 static uint8_t REG_COILS_BUF[REG_COILS_SIZE];
 
 static uint8_t ucSlaveAddr;
+
+/* FreeRTOS mutex for shared register access */
+static SemaphoreHandle_t xRegMutex = NULL;
+
+void REG_Lock_Init(void)
+{
+    if (xRegMutex == NULL)
+        xRegMutex = xSemaphoreCreateMutex();
+}
+
+void REG_Lock(void)
+{
+    if (xRegMutex != NULL)
+        xSemaphoreTake(xRegMutex, portMAX_DELAY);
+}
+
+void REG_Unlock(void)
+{
+    if (xRegMutex != NULL)
+        xSemaphoreGive(xRegMutex);
+}
 
 /* ====== FreeModbus 回调函数: 操作共享寄存器 REG_HOLD_BUF ====== */
 /* REG_HOLD_BUF 同时被 Modbus/CANopen/MQTT 三协议共享，实现寄存器级互通 */
@@ -26,6 +49,7 @@ eMBErrorCode eMBRegCoilsCB(UCHAR *pucRegBuffer, USHORT usAddress,
     if((usRegIndex + usNCoils) > REG_COILS_SIZE)
         return MB_ENOREG;
 
+    REG_Lock();
     if(eMode == MB_REG_WRITE)
     {
         ucLoops = (usNCoils - 1) / 8 + 1;
@@ -63,6 +87,7 @@ eMBErrorCode eMBRegCoilsCB(UCHAR *pucRegBuffer, USHORT usAddress,
             ucLoops--;
         }
     }
+    REG_Unlock();
     return MB_ENOERR;
 }
 
@@ -75,12 +100,14 @@ eMBErrorCode eMBRegInputCB(UCHAR *pucRegBuffer, USHORT usAddress,
 {
     USHORT usRegIndex = usAddress - 1;
     if((usRegIndex + usNRegs) > REG_INPUT_SIZE) return MB_ENOREG;
+    REG_Lock();
     while(usNRegs > 0)
     {
         *pucRegBuffer++ = (UCHAR)(REG_HOLD_BUF[usRegIndex] >> 8);
         *pucRegBuffer++ = (UCHAR)(REG_HOLD_BUF[usRegIndex] & 0xFF);
         usRegIndex++; usNRegs--;
     }
+    REG_Unlock();
     return MB_ENOERR;
 }
 
@@ -94,6 +121,7 @@ eMBErrorCode eMBRegHoldingCB(UCHAR *pucRegBuffer, USHORT usAddress,
     if((usRegIndex + usNRegs) > REG_HOLD_SIZE)
         return MB_ENOREG;
 
+    REG_Lock();
     if(eMode == MB_REG_WRITE)
     {
         while(usNRegs > 0)
@@ -116,6 +144,7 @@ eMBErrorCode eMBRegHoldingCB(UCHAR *pucRegBuffer, USHORT usAddress,
             usNRegs--;
         }
     }
+    REG_Unlock();
     return MB_ENOERR;
 }
 
@@ -140,11 +169,23 @@ void Modbus_Init(uint8_t slave_addr)
   */
 void Modbus_Parse(void)
 {
+    uint8_t coil0, coil1, coil2, coil3;
+    uint16_t hold0;
+
+    /* Snapshot shared registers under lock, then release before GPIO */
+    REG_Lock();
+    coil0 = REG_COILS_BUF[0];
+    coil1 = REG_COILS_BUF[1];
+    coil2 = REG_COILS_BUF[2];
+    coil3 = REG_COILS_BUF[3];
+    hold0 = REG_HOLD_BUF[0];
+    REG_Unlock();
+
     /* Coils control individual outputs (primary, FC5) */
-    LED1_Control(REG_COILS_BUF[0] || (REG_HOLD_BUF[0] & LED1_CMD));
-    LED2_Control(REG_COILS_BUF[1] || (REG_HOLD_BUF[0] & LED2_CMD));
-    BEEP_Control(REG_COILS_BUF[2]  || (REG_HOLD_BUF[0] & BEEP_CMD));
-    RELAY_Control(REG_COILS_BUF[3] || (REG_HOLD_BUF[0] & RELAY_CMD));
+    LED1_Control(coil0 || (hold0 & LED1_CMD));
+    LED2_Control(coil1 || (hold0 & LED2_CMD));
+    BEEP_Control(coil2  || (hold0 & BEEP_CMD));
+    RELAY_Control(coil3 || (hold0 & RELAY_CMD));
 }
 
 /**

@@ -13,4 +13,9 @@ void Modbus_Init(uint8_t slave_addr);
 void Modbus_Task(void);
 void Modbus_Parse(void);
 
+/* Shared register mutex API - protects REG_HOLD_BUF and REG_COILS_BUF */
+void REG_Lock_Init(void);
+void REG_Lock(void);
+void REG_Unlock(void);
+
 #endif

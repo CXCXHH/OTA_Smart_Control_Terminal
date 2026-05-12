@@ -124,6 +124,7 @@ static void CANopenTask(void *pvParameters)
   */
 void App_Tasks_Init(void)
 {
+    REG_Lock_Init();
     xTaskCreate(ModbusTask, "Modbus", MODBUS_TASK_STACK, NULL,
                 MODBUS_TASK_PRIO, NULL);
     xTaskCreate(SensorTask, "Sensor", SENSOR_TASK_STACK, NULL,

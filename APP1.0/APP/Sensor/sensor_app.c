@@ -59,23 +59,33 @@ void SensorApp_Process(void)
     uint16_t temp, rh;
     uint16_t ina_bus, ina_current, ina_power;
     uint8_t aht_ret;
+    uint16_t v3, v4, v5;       /* local snapshots for display */
+    uint16_t adc_voltage, adc_temp;
 
     aht_ret = AHT20_Read(&temp, &rh);
+
+    ina_bus = INA226_Read_BusVoltage();
+    ina_current = INA226_Read_Current();
+    ina_power = INA226_Read_Power();
+    adc_voltage = ADC_GetVoltage();
+    adc_temp = ADC_GetTemperature();
+
+    REG_Lock();
     if (aht_ret == 0)
     {
         REG_HOLD_BUF[1] = temp;
         REG_HOLD_BUF[2] = rh;
     }
-
-    ina_bus = INA226_Read_BusVoltage();
-    ina_current = INA226_Read_Current();
-    ina_power = INA226_Read_Power();
     REG_HOLD_BUF[3] = ina_bus / 8;
     REG_HOLD_BUF[4] = ina_current / 10;
     REG_HOLD_BUF[5] = (uint16_t)((ina_power * 5UL) / 2UL);
-
-    REG_HOLD_BUF[6] = ADC_GetVoltage();
-    REG_HOLD_BUF[7] = ADC_GetTemperature();
+    REG_HOLD_BUF[6] = adc_voltage;
+    REG_HOLD_BUF[7] = adc_temp;
+    /* snapshot for non-critical display (avoid long lock for OLED/printf) */
+    v3 = REG_HOLD_BUF[3];
+    v4 = REG_HOLD_BUF[4];
+    v5 = REG_HOLD_BUF[5];
+    REG_Unlock();
 
     if (++print_cnt >= 4)
     {
@@ -99,21 +109,19 @@ void SensorApp_Process(void)
         }
 
         U1_printf("INA226 BUS=%d.%02dV CUR=%dmA PWR=%dmW raw=%04X/%04X/%04X err=%02X\r\n",
-                  REG_HOLD_BUF[3] / 100, REG_HOLD_BUF[3] % 100,
-                  REG_HOLD_BUF[4], REG_HOLD_BUF[5],
+                  v3 / 100, v3 % 100, v4, v5,
                   ina_bus, ina_current, ina_power, IIC_GetLastError());
 
         {
             char line[22];
             int len;
             len = snprintf(line, sizeof(line), "V=%d.%02dV I=%dmA",
-                           REG_HOLD_BUF[3] / 100, REG_HOLD_BUF[3] % 100,
-                           REG_HOLD_BUF[4]);
+                           v3 / 100, v3 % 100, v4);
             while (len < 21) line[len++] = ' ';
             line[21] = '\0';
             OLED_ShowStr(0, 2, line, 0);
 
-            len = snprintf(line, sizeof(line), "P=%dmW", REG_HOLD_BUF[5]);
+            len = snprintf(line, sizeof(line), "P=%dmW", v5);
             while (len < 21) line[len++] = ' ';
             line[21] = '\0';
             OLED_ShowStr(0, 4, line, 0);
