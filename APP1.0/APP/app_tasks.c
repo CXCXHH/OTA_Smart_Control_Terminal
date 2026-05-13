@@ -70,15 +70,14 @@ static void MQTTTask(void *pvParameters)
     (void)pvParameters;
 
     FIFO_Init(&UART3_FIFO);
-    U1_printf("MQTT task start\r\n");
 
     if (ESP8266_Connect_WIFI())
-        U1_printf("WiFi OK\r\n");
+        ;
     else
         U1_printf("WiFi FAIL\r\n");
 
     if (MQTT_Connect_Server())
-        U1_printf("MQTT connected\r\n");
+        ;
     else
         U1_printf("MQTT FAIL\r\n");
 
@@ -109,7 +108,6 @@ static void CANopenTask(void *pvParameters)
 {
     (void)pvParameters;
     Canopen_Init();
-    U1_printf("CANopen task start\r\n");
     for (;;)
     {
         Canopen_Process();

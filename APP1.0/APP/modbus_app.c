@@ -60,7 +60,6 @@ eMBErrorCode eMBRegCoilsCB(UCHAR *pucRegBuffer, USHORT usAddress,
             while(usNCoils != 0 && ucBits < 8)
             {
                 REG_COILS_BUF[usRegIndex] = (ucState >> ucBits) & 0x01;
-                U1_printf("MB WR COIL[%d]=%d\r\n", usRegIndex + 1, REG_COILS_BUF[usRegIndex]);
                 usRegIndex++;
                 usNCoils--;
                 ucBits++;
@@ -127,7 +126,6 @@ eMBErrorCode eMBRegHoldingCB(UCHAR *pucRegBuffer, USHORT usAddress,
         while(usNRegs > 0)
         {
             REG_HOLD_BUF[usRegIndex] = (pucRegBuffer[0] << 8) | pucRegBuffer[1];
-            U1_printf("MB WR HOLD[%d]=%04X\r\n", usRegIndex + 1, REG_HOLD_BUF[usRegIndex]);
             pucRegBuffer += 2;
             usRegIndex++;
             usNRegs--;

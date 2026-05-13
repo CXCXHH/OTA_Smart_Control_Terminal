@@ -55,7 +55,6 @@ uint8_t WIFI4G_Parse_Queue(void)
     while (FIFO_Pop(&UART3_FIFO, &c))
     {
         RecvBuf[i++] = c;
-        U1_printf("%c", c);
         if (i >= NSize - 1) break;
     }
     RecvBuf[i] = '\0';
@@ -71,12 +70,10 @@ uint8_t WIFI4G_Parse_Queue(void)
             topicp += strlen("v1/devices/me/rpc/request/");
             RPC_RequestId = strtoul(topicp, NULL, 10);
             RPC_Pending = 1;
-            U1_printf("RPC id=%lu\r\n", RPC_RequestId);
         }
 
         if ((leftp != NULL) && (rightp != NULL) && (rightp >= leftp)) {
             *++rightp = '\0';
-            U1_printf("MQTT RX:%s\r\n", leftp);
 
             if (RPC_Pending) {
                 MQTT_Parse_DeviceData((uint8_t *)leftp, RPC_RequestId);
@@ -132,7 +129,6 @@ uint8_t ESP8266_Connect_WIFI(void)
     if (ret == WIFI4G_NOT) return 0;
 
     /* WiFi 连接失败，尝试 SmartConfig */
-    U1_printf("WiFi not connected, starting SmartConfig...\r\n");
     strcpy((char *)Parse_Substr, "smartconfig connected wifi\r\n");
     WIFI4G_CMD_Status = WIFI4G_NOT;
     strcpy((char *)buf, "AT+CWSTARTSMART=3,3\r\n");

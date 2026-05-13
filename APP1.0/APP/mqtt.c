@@ -10,7 +10,6 @@
 #include "bsp.h"
 #include "modbus_app.h"
 #include "bsp_gpio.h"
-#include "cJSON.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -254,72 +253,84 @@ static uint8_t MQTT_SendRpcResponse(uint32_t request_id, const char *status)
 
 uint8_t MQTT_Parse_DeviceData(uint8_t *json, uint32_t request_id)
 {
-    cJSON *root;
-    cJSON *method;
-    cJSON *params;
-    uint8_t state;
+    char method[32];
+    uint8_t state = 0;
     uint8_t changed = 0;
+    char *p;
+    int i;
 
-    root = cJSON_Parse((char *)json);
-    if (root == NULL)
-        return 0;
-
-    method = cJSON_GetObjectItem(root, "method");
-    params = cJSON_GetObjectItem(root, "params");
-    if ((method == NULL) || (method->valuestring == NULL)) {
+    /* ── 1. Locate "method" key and extract its string value ── */
+    p = strstr((char *)json, "\"method\"");
+    if (!p) {
         U1_printf("RPC parse no method\r\n");
-        cJSON_Delete(root);
         return 0;
     }
-    U1_printf("RPC method=%s\r\n", method->valuestring);
-
-    if (strcmp(method->valuestring, "led1Status") == 0) {
+    p += 8; /* skip past "\"method\"" */
+    while (*p == ' ' || *p == '\t') p++;
+    if (*p != ':')  { U1_printf("RPC parse no method\r\n"); return 0; }
+    p++;
+    while (*p == ' ' || *p == '\t') p++;
+    if (*p != '"')  { U1_printf("RPC parse no method\r\n"); return 0; }
+    p++; /* skip opening quote */
+    for (i = 0; *p && *p != '"' && i < (int)sizeof(method) - 1; i++)
+        method[i] = *p++;
+    if (*p != '"')  { U1_printf("RPC parse no method\r\n"); return 0; }
+    method[i] = '\0';
+    /* ── 2. Query methods (no params needed) ── */
+    if (strcmp(method, "led1Status") == 0) {
         REG_Lock();
         state = (REG_HOLD_BUF[REG_IDX_OUTPUT] & LED1_CMD) ? 1 : 0;
         REG_Unlock();
         MQTT_SendRpcResponse(request_id, state ? "true" : "false");
-        cJSON_Delete(root);
         return 1;
-    } else if (strcmp(method->valuestring, "beepStatus") == 0) {
+    } else if (strcmp(method, "beepStatus") == 0) {
         REG_Lock();
         state = (REG_HOLD_BUF[REG_IDX_OUTPUT] & BEEP_CMD) ? 1 : 0;
         REG_Unlock();
         MQTT_SendRpcResponse(request_id, state ? "true" : "false");
-        cJSON_Delete(root);
         return 1;
-    } else if (strcmp(method->valuestring, "relayStatus") == 0) {
+    } else if (strcmp(method, "relayStatus") == 0) {
         REG_Lock();
         state = (REG_HOLD_BUF[REG_IDX_OUTPUT] & RELAY_CMD) ? 1 : 0;
         REG_Unlock();
         MQTT_SendRpcResponse(request_id, state ? "true" : "false");
-        cJSON_Delete(root);
         return 1;
     }
 
-    if (params == NULL) {
-        cJSON_Delete(root);
+    /* ── 3. Set methods: locate "params" key ── */
+    p = strstr((char *)json, "\"params\"");
+    if (!p) return 0;
+    p += 8; /* skip past "\"params\"" */
+    while (*p == ' ' || *p == '\t') p++;
+    if (*p != ':') return 0;
+    p++;
+    while (*p == ' ' || *p == '\t') p++;
+
+    /* ── 4. Determine boolean state from params ── */
+    /* Object form: {"state": true}  -> skip { and look for inner key */
+    if (*p == '{') {
+        p = strstr(p + 1, "\"state\"");
+        if (!p) return 0;
+        p += 7; /* skip past "\"state\"" */
+        while (*p == ' ' || *p == '\t') p++;
+        if (*p != ':') return 0;
+        p++;
+        while (*p == ' ' || *p == '\t') p++;
+    }
+    /* Direct form: true / false / 1 / 0 */
+    if (*p == 't' && strncmp(p, "true", 4) == 0)
+        state = 1;
+    else if (*p == 'f' && strncmp(p, "false", 5) == 0)
+        state = 0;
+    else if (*p == '1')
+        state = 1;
+    else if (*p == '0')
+        state = 0;
+    else
         return 0;
-    }
 
-    {
-        /* ── ThingsBoard RPC params 可能是直接值或者 {state:…} 对象 ── */
-        cJSON *stateItem = cJSON_GetObjectItem(params, "state");
-        if (stateItem) {
-            /* params = {"state": true}  对象格式 */
-            if (cJSON_IsBool(stateItem))
-                state = cJSON_IsTrue(stateItem) ? 1 : 0;
-            else
-                state = (stateItem->valueint != 0) ? 1 : 0;
-        } else {
-            /* params = true / false / 1 / 0  直接值格式 */
-            if (cJSON_IsBool(params))
-                state = cJSON_IsTrue(params) ? 1 : 0;
-            else
-                state = (params->valueint != 0) ? 1 : 0;
-        }
-    }
-
-    if (strcmp(method->valuestring, "led1Set") == 0) {
+    /* ── 5. Apply set methods ── */
+    if (strcmp(method, "led1Set") == 0) {
         REG_Lock();
         if (state)
             REG_HOLD_BUF[REG_IDX_OUTPUT] |= LED1_CMD;
@@ -327,7 +338,7 @@ uint8_t MQTT_Parse_DeviceData(uint8_t *json, uint32_t request_id)
             REG_HOLD_BUF[REG_IDX_OUTPUT] &= (uint16_t)~LED1_CMD;
         REG_Unlock();
         changed = 1;
-    } else if (strcmp(method->valuestring, "beepSet") == 0) {
+    } else if (strcmp(method, "beepSet") == 0) {
         REG_Lock();
         if (state)
             REG_HOLD_BUF[REG_IDX_OUTPUT] |= BEEP_CMD;
@@ -335,7 +346,7 @@ uint8_t MQTT_Parse_DeviceData(uint8_t *json, uint32_t request_id)
             REG_HOLD_BUF[REG_IDX_OUTPUT] &= (uint16_t)~BEEP_CMD;
         REG_Unlock();
         changed = 1;
-    } else if (strcmp(method->valuestring, "relaySet") == 0) {
+    } else if (strcmp(method, "relaySet") == 0) {
         REG_Lock();
         if (state)
             REG_HOLD_BUF[REG_IDX_OUTPUT] |= RELAY_CMD;
@@ -346,17 +357,10 @@ uint8_t MQTT_Parse_DeviceData(uint8_t *json, uint32_t request_id)
     }
 
     if (changed) {
-        uint16_t hold0;
-
-        REG_Lock();
-        hold0 = REG_HOLD_BUF[REG_IDX_OUTPUT];
-        REG_Unlock();
         App_Output_RefreshFromSharedRegs();
-        U1_printf("RPC hold0=%04X\r\n", hold0);
         MQTT_SendRpcResponse(request_id, state ? "true" : "false");
     }
 
-    cJSON_Delete(root);
     return changed;
 }
 

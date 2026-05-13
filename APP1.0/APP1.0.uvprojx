@@ -690,11 +690,6 @@
               <FilePath>.\APP\oled.c</FilePath>
             </File>
             <File>
-              <FileName>ota.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\APP\ota.c</FilePath>
-            </File>
-            <File>
               <FileName>wifi4g.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\APP\wifi4g.c</FilePath>
@@ -720,11 +715,6 @@
           <GroupName>Middleware/FreeRTOS</GroupName>
           <Files>
             <File>
-              <FileName>event_groups.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Middleware\FreeRTOS\event_groups.c</FilePath>
-            </File>
-            <File>
               <FileName>heap_4.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Middleware\FreeRTOS\portable\MemMang\heap_4.c</FilePath>
@@ -745,32 +735,13 @@
               <FilePath>.\Middleware\FreeRTOS\queue.c</FilePath>
             </File>
             <File>
-              <FileName>stream_buffer.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Middleware\FreeRTOS\stream_buffer.c</FilePath>
-            </File>
-            <File>
               <FileName>tasks.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Middleware\FreeRTOS\tasks.c</FilePath>
             </File>
-            <File>
-              <FileName>timers.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Middleware\FreeRTOS\timers.c</FilePath>
-            </File>
           </Files>
         </Group>
-        <Group>
-          <GroupName>Middleware/cJSON</GroupName>
-          <Files>
-            <File>
-              <FileName>cJSON.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Middleware\cJSON\cJSON.c</FilePath>
-            </File>
-          </Files>
-        </Group>
+
         <Group>
           <GroupName>Middleware/Canfestival</GroupName>
           <Files>
@@ -795,9 +766,9 @@
               <FilePath>.\Middleware\Canfestival\Src\objacces.c</FilePath>
             </File>
             <File>
-              <FileName>pdo.c</FileName>
+              <FileName>pdo_stub.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\Middleware\Canfestival\Src\pdo.c</FilePath>
+              <FilePath>.\Middleware\Canfestival\Src\pdo_stub.c</FilePath>
             </File>
             <File>
               <FileName>sdo.c</FileName>

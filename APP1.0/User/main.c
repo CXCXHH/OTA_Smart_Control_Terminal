@@ -9,14 +9,12 @@
 #include "task.h"
 #include "modbus_app.h"
 #include "app_tasks.h"
-#include "ota.h"
 #include "oled.h"
 #include "wifi4g.h"
 
 int main(void)
 {
     Bsp_Init();
-    U1_printf("APP start\r\n");
 
     OLED_Init();
     OLED_Clear();
@@ -25,11 +23,9 @@ int main(void)
     FIFO_Init(&UART3_FIFO);
 
     Modbus_Init(1);
-    U1_printf("Modbus OK\r\n");
 
     App_Tasks_Init();
 
-    U1_printf("FreeRTOS start\r\n");
     vTaskStartScheduler();
 
     while (1) { }
