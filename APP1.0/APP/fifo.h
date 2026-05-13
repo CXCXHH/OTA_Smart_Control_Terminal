@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define FIFO_BUF_SIZE  512
+#define FIFO_BUF_SIZE  1024
 
 /* 环形 FIFO: head=写入位置, tail=读取位置 */
 typedef struct {

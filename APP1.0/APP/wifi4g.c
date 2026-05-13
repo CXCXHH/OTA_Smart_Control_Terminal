@@ -79,8 +79,8 @@ static void OTA_ParseChunkStream(const uint8_t *buf, uint16_t len)
     uint16_t prefix_len;
     uint16_t i;
 
-    sprintf(prefix, "v2/fw/response/%lu/chunk/%lu,%lu,",
-            OTA_Info.request_id, OTA_Info.chunk_id, OTA_Info.request_bytes);
+    sprintf(prefix, "v2/fw/response/%lu/chunk/%lu,",
+            OTA_Info.request_id, OTA_Info.chunk_id);
     prefix_len = (uint16_t)strlen(prefix);
 
     for (i = 0; i < len; i++) {
@@ -104,10 +104,25 @@ static void OTA_ParseChunkStream(const uint8_t *buf, uint16_t len)
         if (chunkp != NULL) {
             uint16_t chunk_off = (uint16_t)(chunkp - (char *)OtaHeader);
             uint16_t data_off = (uint16_t)(chunk_off + prefix_len);
+            uint16_t len_pos;
+            uint32_t wire_len = 0UL;
             uint16_t buffered_payload = OtaHeaderLen - data_off;
             uint16_t j;
 
-            OtaPayloadLen = (uint16_t)OTA_Info.request_bytes;
+            len_pos = data_off;
+            while ((len_pos < OtaHeaderLen) && (OtaHeader[len_pos] >= '0') && (OtaHeader[len_pos] <= '9')) {
+                wire_len = (wire_len * 10UL) + (uint32_t)(OtaHeader[len_pos] - '0');
+                len_pos++;
+            }
+            if ((len_pos >= OtaHeaderLen) || (OtaHeader[len_pos] != ','))
+                continue;
+
+            data_off = (uint16_t)(len_pos + 1U);
+            if ((wire_len == 0UL) || (wire_len > sizeof(OTA_Info.recv_buf)))
+                continue;
+
+            buffered_payload = OtaHeaderLen - data_off;
+            OtaPayloadLen = (uint16_t)wire_len;
             OtaPayloadReceived = 0;
             OtaPayloadActive = 1;
 

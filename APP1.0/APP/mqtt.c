@@ -22,6 +22,9 @@ OTA_FW_Info_t OTA_Info;
 #define OTA_W25_BLOCK_SIZE        (64UL * 1024UL)
 #define OTA_W25_TARGET_BLOCK      0UL  /* Bootloader 自动升级从 block 0 读取 */
 #define OTA_W25_BASE_ADDR         (OTA_W25_TARGET_BLOCK * OTA_W25_BLOCK_SIZE)
+#define OTA_CHUNK_TIMEOUT_MS      5000UL
+#define OTA_CHUNK_MAX_RETRY       10U
+#define OTA_CHUNK_GAP_MS          120U
 #define OTA_EE_COMPAT_ADDR        0U
 #define OTA_EE_COMPAT_SIZE        80U
 #define OTA_EE_EXT_ADDR           80U
@@ -654,20 +657,21 @@ uint8_t MQTT_OTA_GetFW(void)
             OTA_Info.recv_flag = 0;
             OTA_ClearAccum();
             MQTT_RequestOtaChunk();
-            timeout = 60000UL;
+            timeout = OTA_CHUNK_TIMEOUT_MS;
             while (OTA_Info.recv_flag == 0U) {
                 WIFI4G_Parse_Queue();
                 if (timeout-- == 0UL) {
                     chunk_retry++;
-                    if (chunk_retry >= 5) {
+                    if (chunk_retry >= OTA_CHUNK_MAX_RETRY) {
                         U1_printf("OTA chunk %lu fail after %u retries\r\n", i, chunk_retry);
                         return 0;
                     }
                     U1_printf("OTA chunk %lu retry %u\r\n", i, chunk_retry);
+                    vTaskDelay(pdMS_TO_TICKS(OTA_CHUNK_GAP_MS));
                     /* 重试重发当前 chunk，保持本轮 request_id 与参考工程一致。 */
                     goto retry_chunk;
                 }
-                Delay_ms(1);
+                vTaskDelay(pdMS_TO_TICKS(1));
             }
         }
 
@@ -681,6 +685,7 @@ uint8_t MQTT_OTA_GetFW(void)
         OTA_CRC32_Update(&crc32, OTA_Info.recv_buf, chunk_len);
         OTA_W25_Write(OTA_W25_BASE_ADDR + OTA_Info.received_bytes, OTA_Info.recv_buf, chunk_len);
         OTA_Info.received_bytes += chunk_len;
+        vTaskDelay(pdMS_TO_TICKS(OTA_CHUNK_GAP_MS));
     }
 
     fw_crc32 = OTA_CRC32_Final(crc32);

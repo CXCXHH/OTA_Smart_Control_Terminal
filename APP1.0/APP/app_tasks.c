@@ -16,7 +16,7 @@
 #define MODBUS_TASK_PRIO      (tskIDLE_PRIORITY + 2)
 #define SENSOR_TASK_PRIO      (tskIDLE_PRIORITY + 1)
 #define CANOPEN_TASK_PRIO     (tskIDLE_PRIORITY + 1)
-#define MQTT_TASK_PRIO        (tskIDLE_PRIORITY + 1)
+#define MQTT_TASK_PRIO        (tskIDLE_PRIORITY + 3)
 
 #define MODBUS_TASK_STACK     256
 #define SENSOR_TASK_STACK     256
