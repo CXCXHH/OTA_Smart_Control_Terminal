@@ -23,6 +23,7 @@
 *.uvguix.*
 *.uvoptx
 project.uvprojx
+!Bootloader_std/project.uvprojx
 
 # Build output directories
 **/Objects/
@@ -34,3 +35,6 @@ project.uvprojx
 
 # ===== Backup =====
 Bootloader_std_backup/
+
+# Local handoff notes
+project_Mem.md

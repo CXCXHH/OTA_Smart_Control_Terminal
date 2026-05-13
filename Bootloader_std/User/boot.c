@@ -14,10 +14,16 @@
 #define W25Q64_BLOCK_SIZE       (64 * 1024)
 #define W25Q64_BLOCK_MIN        '1'
 #define W25Q64_BLOCK_MAX        '9'
+#define BOOT_START_CMD          0xFF
+#define BOOT_KEY_NONE           0
+#define BOOT_KEY_BLOCK1         1
+#define BOOT_KEY_BLOCK2         2
 
 /* 函数指针：保存用户程序复位入口，赋值后 call 即跳转 */
 load_a load_A;
 
+static void BootLoader_KeyInit(void);
+static uint8_t BootLoader_ReadKeyBlock(void);
 static void BootLoader_HandleIdleCommand(uint8_t cmd);
 static void BootLoader_HandleXmodem(uint8_t *data, uint16_t datalen);
 static void BootLoader_HandleVersionInput(uint8_t *data, uint16_t datalen);
@@ -35,19 +41,32 @@ static void BootLoader_WriteExternalBlockData(uint32_t offset, uint8_t *data, ui
  */
 void BootLoader_Brance(void)
 {
-    if(BootLoader_Enter(20) == 0)
+    uint8_t startup_select;
+
+    startup_select = BootLoader_Enter(100);
+    if(startup_select == BOOT_KEY_NONE)
     {
         if(OTA_Info.OTA_FLAG == OTA_SET_FLAG)
         {
             U1_printf("OTA YES!\r\n");
+            OLED_Boot_ShowLine2x(4, "OTA");
             BootStaFlag |= UPDATA_A_FLAG;
             UpDataA.W25Q64_BlockNB = 0;
         }
         else
         {
             U1_printf("OTA GO A!\r\n");
+            OLED_Boot_ShowLine2x(4, "GO A");
             LOAD_A(STM32_A_START_ADDR);
         }
+    }
+    else if(startup_select != BOOT_START_CMD)
+    {
+        U1_printf("KEY use W25Q64 block %d\r\n", startup_select);
+        OLED_Boot_ShowLine2x(4, (startup_select == 1) ? "ESC B1" : "OK B2");
+        BootStaFlag |= UPDATA_A_FLAG;
+        UpDataA.W25Q64_BlockNB = startup_select;
+        BootLoader_UpdateAFromExternalFlash();
     }
 
     U1_printf("进入BootLoader命令行\r\n");
@@ -55,21 +74,69 @@ void BootLoader_Brance(void)
 }
 
 /*
- * timeout: 超时值，单位 100ms。调用传 20 表示等待 2s
- * 返回 1 进入命令行，0 超时继续正常启动
+ * timeout: 超时值，单位 100ms。调用传 100 表示等待 10s。
+ * 返回 0=超时正常启动，0xFF=串口 w 进入命令行，
+ *      1=ESC 选择 block1，2=OK 选择 block2。
  */
 uint8_t BootLoader_Enter(uint8_t timeout)
 {
-    U1_printf("%ds内，输入小写 w ，进入BootLoader命令行\r\n", timeout / 10);
+    BootLoader_KeyInit();
+    OLED_Boot_ShowLine2x(0, "BOOT");
+    OLED_Boot_ShowLine2x(2, "ESC B1");
+    OLED_Boot_ShowLine2x(4, "OK B2");
+    U1_printf("%ds内，w进入命令行，ESC B1，OK B2\r\n", timeout / 10);
     while(timeout--)
     {
         Delay_ms(100);
+        {
+            uint8_t key_block = BootLoader_ReadKeyBlock();
+            if(key_block != BOOT_KEY_NONE)
+            {
+                return key_block;
+            }
+        }
         if(USART1_RxBuf[0] == 'w')
         {
-            return 1;
+            return BOOT_START_CMD;
         }
     }
-    return 0;
+    return BOOT_KEY_NONE;
+}
+
+static void BootLoader_KeyInit(void)
+{
+    GPIO_InitTypeDef GPIO_InitStructure;
+
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB, ENABLE);
+
+    /* 按键接地触发，Bootloader 内部上拉；ESC(PA8)=block1，OK(PB12)=block2。 */
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8;
+    GPIO_Init(GPIOA, &GPIO_InitStructure);
+
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12;
+    GPIO_Init(GPIOB, &GPIO_InitStructure);
+}
+
+static uint8_t BootLoader_ReadKeyBlock(void)
+{
+    if(GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_8) == Bit_RESET)
+    {
+        Delay_ms(20);
+        if(GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_8) == Bit_RESET)
+            return BOOT_KEY_BLOCK1;
+    }
+
+    if(GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_12) == Bit_RESET)
+    {
+        Delay_ms(20);
+        if(GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_12) == Bit_RESET)
+            return BOOT_KEY_BLOCK2;
+    }
+
+    return BOOT_KEY_NONE;
 }
 
 void BootLoader_Info(void)

@@ -94,10 +94,19 @@ void BootLoader_UpdateAFromExternalFlash(void)
 	block_addr = UpDataA.W25Q64_BlockNB * 64 * 1024;
 
 	U1_printf("长度%d字节\r\n", file_len);
+	if((file_len == 0) || (file_len > (STM32_A_PAGE_COUNT * FLASH_PAGE_SIZE)))
+	{
+		U1_printf("外部Flash block %d 无有效程序\r\n", UpDataA.W25Q64_BlockNB);
+		OLED_Boot_ShowLine2x(4, "NO APP");
+		BootStaFlag &= ~UPDATA_A_FLAG;
+		return;
+	}
+
 	/* 内部 Flash 按 half-word 编程，固件长度必须保持偶数字节/4字节对齐。 */
 	if(file_len % 4 != 0)
 	{
 		U1_printf("长度不对\r\n");
+		OLED_Boot_ShowLine2x(4, "LEN ERR");
 		BootStaFlag &= ~UPDATA_A_FLAG;
 		return;
 	}
@@ -127,5 +136,6 @@ void BootLoader_UpdateAFromExternalFlash(void)
 	}
 
 	U1_printf("升级完成\r\n");
+	OLED_Boot_ShowLine2x(4, "UP OK");
 	NVIC_SystemReset();
 }

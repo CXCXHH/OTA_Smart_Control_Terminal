@@ -18,6 +18,7 @@
 #include "bsp_w25q64.h"
 #include "bsp_AT24C02.h"
 #include "bsp_flash.h"
+#include "oled_boot.h"
 
 void Bsp_Init(void);
 
