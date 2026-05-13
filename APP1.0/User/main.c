@@ -9,16 +9,11 @@
 #include "task.h"
 #include "modbus_app.h"
 #include "app_tasks.h"
-#include "oled.h"
 #include "wifi4g.h"
 
 int main(void)
 {
     Bsp_Init();
-
-    OLED_Init();
-    OLED_Clear();
-    OLED_ShowStr(0, 0, "OTA Version v1", 1);
 
     FIFO_Init(&UART3_FIFO);
 

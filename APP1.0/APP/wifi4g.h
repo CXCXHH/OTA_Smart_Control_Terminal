@@ -14,5 +14,6 @@ extern FIFO_t UART3_FIFO;
 uint8_t Test_WIFI4G_CMD_Status(uint32_t timeout_ms);
 uint8_t WIFI4G_Parse_Queue(void);
 uint8_t ESP8266_Connect_WIFI(void);
+void OTA_ClearAccum(void);
 
 #endif

@@ -12,7 +12,6 @@
 #include "bsp.h"
 #include "mqtt.h"
 #include "wifi4g.h"
-#include "oled.h"
 
 #define MODBUS_TASK_PRIO      (tskIDLE_PRIORITY + 2)
 #define SENSOR_TASK_PRIO      (tskIDLE_PRIORITY + 1)
@@ -36,7 +35,6 @@ static void SensorTask(void *pvParameters)
 {
     (void)pvParameters;
     SensorApp_Init();
-    OLED_Clear();
     for (;;)
     {
         SensorApp_Process();
@@ -85,6 +83,7 @@ static void MQTTTask(void *pvParameters)
     for (;;)
     {
         WIFI4G_Parse_Queue();
+        MQTT_OTA_Process();
 
         if ((xTaskGetTickCount() - last_tx_tick) >= pdMS_TO_TICKS(MQTT_TX_PERIOD_MS))
         {

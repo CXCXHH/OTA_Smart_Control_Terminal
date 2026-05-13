@@ -45,6 +45,23 @@ Keil 路径：
 
 - Keil 编译通过：`0 Error(s), 0 Warning(s)`。
 - 用户实测：协议之间运行顺滑，互斥锁改动无明显问题。
+- 2026-05-13 真云端 OTA 小固件验证已打通：`APP1.0` 已能正常连接 `xthings.cloud`，下载 `APP1.1` 小固件到 W25Q64，复位后 Bootloader 自动搬运到 A 区并启动。
+  - 串口现象：
+    - `Sensors OK`
+    - `MQTT Server OK`
+    - `OTA meta ver=APP1.1 size=1288 crc=dd9297d6`
+    - `OTA ready block2 len=1288 crc=DD9297D6`
+    - `OTA reboot for bootloader select`
+    - `OTA YES!`
+    - `长度1288字节`
+    - `校验成功`
+    - `升级完成`
+    - `OTA GO A!`
+  - 结论：
+    - APP 侧 OTA 元数据解析、chunk 下载、W25Q64 写入、EEPROM 标记写入已形成闭环
+    - Bootloader 自动检测 OTA_FLAG、从 W25Q64 block 0 搬运到 A 区、写后校验、清标志并跳转 A 区已验证
+    - 小固件启动后 LED2 闪烁，证明 APP1.1 已运行
+    - 大固件 44KB 仍需继续做长链路稳定性和速度优化；当前保持 ThingsBoard/APP1_1 兼容的 256B chunk
 - 任务 1 已完成：共享寄存器索引宏已固化，`sensor_app.c`、`mqtt.c`、`modbus_app.c` 关键下标已替换为 `REG_IDX_*`。
 - 任务 2 已完成：CANopen `0x2000` 已改为任务上下文同步快照读取，控制/从机地址写入改为 ISR 安全的延后应用，用户实测 CAN 控制恢复正常。
 - 任务 3 已完成：MQTT、Modbus、CANopen 已统一走共享寄存器输出刷新入口，保持 Modbus coils 与 holding 输出组合逻辑一致。
@@ -183,6 +200,26 @@ void App_Output_ApplySnapshot(uint16_t hold0, uint8_t coil0, uint8_t coil1, uint
 目标：
 
 APP 侧能通过 MQTT/HTTP/云端 OTA 流程接收二进制文件，并写入 W25Q64，写入完成后设置升级标志。
+
+当前进展（2026-05-13）：
+
+- 已完成：
+  - `APP1.0` 体积压缩到可用于 A 区升级验证的范围
+  - APP 可正常启动并连接 `xthings.cloud`
+  - OTA attributes 元数据已能解析出 `fw_version / fw_size / fw_checksum`
+- `APP1.1` 小固件 OTA 已完成端到端验证：
+  - APP 下载 1288B 固件到 W25Q64 block 0
+  - APP 写 EEPROM OTA_FLAG、固件长度、版本和 CRC 元数据
+  - Bootloader 复位后读取 OTA_FLAG，搬运 W25Q64 到 A 区
+  - Bootloader 写后校验成功并跳转 A 区
+  - APP1.1 运行后 LED2 闪烁
+- 仍需优化：
+  - 44KB 大固件长链路下载偶发超时
+  - 512B/1KB chunk 在当前 xthings/ML307 链路上首包不稳定，暂回退到 APP1_1 兼容的 256B chunk
+  - 后续可减少串口日志、增加断点续传或失败后从当前 chunk 重试来提升大固件体验
+- 下一步排查重点：
+  - 保持 `v2/fw/request/<id>/chunk/<n>` payload 为 `256`，与参考工程 `APP1_1` 一致
+  - 大固件若再卡住，优先记录最后成功 chunk 和重试 chunk，判断是云端/模组偶发丢包还是解析层边界问题
 
 具体实现：
 

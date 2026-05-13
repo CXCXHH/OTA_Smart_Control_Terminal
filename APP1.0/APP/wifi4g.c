@@ -18,10 +18,107 @@ FIFO_t UART3_FIFO;
 
 #define NSize 512
 static uint8_t RecvBuf[NSize];
+static uint8_t OtaHeader[96];
+static uint16_t OtaHeaderLen;
+static uint16_t OtaPayloadLen;
+static uint16_t OtaPayloadReceived;
+static uint8_t OtaPayloadActive;
+
+void OTA_ClearAccum(void)
+{
+    OtaHeaderLen = 0;
+    OtaPayloadLen = 0;
+    OtaPayloadReceived = 0;
+    OtaPayloadActive = 0;
+}
 
 /* 持久化 RPC request ID，应对 topic 与 JSON payload 分两批到达的情况 */
 static uint8_t  RPC_Pending    = 0;
 static uint32_t RPC_RequestId  = 0;
+
+static char *FindAsciiInBuf(const uint8_t *buf, uint16_t len, const char *pat)
+{
+    uint16_t i;
+    uint16_t pat_len;
+
+    if ((buf == NULL) || (pat == NULL))
+        return NULL;
+
+    pat_len = (uint16_t)strlen(pat);
+    if ((pat_len == 0U) || (len < pat_len))
+        return NULL;
+
+    for (i = 0; i <= (uint16_t)(len - pat_len); i++) {
+        if (memcmp(&buf[i], pat, pat_len) == 0)
+            return (char *)&buf[i];
+    }
+
+    return NULL;
+}
+
+static void OTA_ConsumePayloadByte(uint8_t c)
+{
+    if (OtaPayloadReceived < sizeof(OTA_Info.recv_buf))
+        OTA_Info.recv_buf[OtaPayloadReceived] = c;
+
+    OtaPayloadReceived++;
+    if (OtaPayloadReceived >= OtaPayloadLen) {
+        OTA_Info.recv_flag = 1;
+        if ((OTA_Info.chunk_id == 0UL) || ((OTA_Info.chunk_id % 16UL) == 0UL) ||
+            (OTA_Info.request_bytes != OTA_CHUNK_SIZE)) {
+            U1_printf("OTA chunk %lu len=%lu\r\n", OTA_Info.chunk_id, OTA_Info.request_bytes);
+        }
+        OTA_ClearAccum();
+    }
+}
+
+static void OTA_ParseChunkStream(const uint8_t *buf, uint16_t len)
+{
+    char prefix[64];
+    char *chunkp;
+    uint16_t prefix_len;
+    uint16_t i;
+
+    sprintf(prefix, "v2/fw/response/%lu/chunk/%lu,%lu,",
+            OTA_Info.request_id, OTA_Info.chunk_id, OTA_Info.request_bytes);
+    prefix_len = (uint16_t)strlen(prefix);
+
+    for (i = 0; i < len; i++) {
+        if (OtaPayloadActive) {
+            OTA_ConsumePayloadByte(buf[i]);
+            continue;
+        }
+
+        if (OtaHeaderLen < sizeof(OtaHeader))
+            OtaHeader[OtaHeaderLen++] = buf[i];
+        else {
+            uint16_t keep = (prefix_len > 1U) ? (prefix_len - 1U) : 0U;
+            if (keep >= sizeof(OtaHeader))
+                keep = sizeof(OtaHeader) - 1U;
+            memmove(OtaHeader, OtaHeader + OtaHeaderLen - keep, keep);
+            OtaHeaderLen = keep;
+            OtaHeader[OtaHeaderLen++] = buf[i];
+        }
+
+        chunkp = FindAsciiInBuf(OtaHeader, OtaHeaderLen, prefix);
+        if (chunkp != NULL) {
+            uint16_t chunk_off = (uint16_t)(chunkp - (char *)OtaHeader);
+            uint16_t data_off = (uint16_t)(chunk_off + prefix_len);
+            uint16_t buffered_payload = OtaHeaderLen - data_off;
+            uint16_t j;
+
+            OtaPayloadLen = (uint16_t)OTA_Info.request_bytes;
+            OtaPayloadReceived = 0;
+            OtaPayloadActive = 1;
+
+            for (j = 0; (j < buffered_payload) && OtaPayloadActive; j++)
+                OTA_ConsumePayloadByte(OtaHeader[data_off + j]);
+
+            if (OtaPayloadActive)
+                OtaHeaderLen = 0;
+        }
+    }
+}
 
 /**
   * @brief  等待 AT 命令响应 (阻塞)
@@ -51,6 +148,9 @@ uint8_t WIFI4G_Parse_Queue(void)
 {
     uint8_t c;
     uint16_t i = 0;
+    char *topicp;
+    char *leftp;
+    char *rightp;
 
     while (FIFO_Pop(&UART3_FIFO, &c))
     {
@@ -59,35 +159,55 @@ uint8_t WIFI4G_Parse_Queue(void)
     }
     RecvBuf[i] = '\0';
 
+    if (i == 0)
+        return WIFI4G_NOT;
+
     if (MQTT_Download_Flag)
     {
-        char *topicp = strstr((char *)RecvBuf, "v1/devices/me/rpc/request/");
-        char *leftp  = strstr((char *)RecvBuf, "{");
-        char *rightp = strrchr((char *)RecvBuf, '}');
+        if (MQTT_OTA_FLAG) {
+            OTA_ParseChunkStream(RecvBuf, i);
+        } else {
+            topicp = FindAsciiInBuf(RecvBuf, i, "v1/devices/me/rpc/request/");
+            leftp  = FindAsciiInBuf(RecvBuf, i, "{");
+            rightp = NULL;
 
-        /* 提取 RPC request ID（提前扫描，即使 JSON payload 稍后才到） */
-        if (topicp != NULL) {
-            topicp += strlen("v1/devices/me/rpc/request/");
-            RPC_RequestId = strtoul(topicp, NULL, 10);
-            RPC_Pending = 1;
-        }
+            if (leftp != NULL) {
+                uint16_t idx;
+                for (idx = i; idx > 0U; idx--) {
+                    if (RecvBuf[idx - 1U] == '}') {
+                        rightp = (char *)&RecvBuf[idx - 1U];
+                        break;
+                    }
+                }
+            }
 
-        if ((leftp != NULL) && (rightp != NULL) && (rightp >= leftp)) {
-            *++rightp = '\0';
+            /* 提取 RPC request ID（提前扫描，即使 JSON payload 稍后才到） */
+            if (topicp != NULL) {
+                topicp += strlen("v1/devices/me/rpc/request/");
+                RPC_RequestId = strtoul(topicp, NULL, 10);
+                RPC_Pending = 1;
+            }
 
-            if (RPC_Pending) {
-                MQTT_Parse_DeviceData((uint8_t *)leftp, RPC_RequestId);
-                RPC_Pending    = 0;
-                RPC_RequestId  = 0;
-            } else {
-                MQTT_Parse_JsonData((uint8_t *)leftp);
+            if ((leftp != NULL) && (rightp != NULL) && (rightp >= leftp)) {
+                *++rightp = '\0';
+
+                if (strstr((char *)RecvBuf, "v1/devices/me/attributes") != NULL) {
+                    MQTT_Parse_OTAData((uint8_t *)leftp);
+                } else if (RPC_Pending) {
+                    MQTT_Parse_DeviceData((uint8_t *)leftp, RPC_RequestId);
+                    RPC_Pending    = 0;
+                    RPC_RequestId  = 0;
+                } else {
+                    MQTT_Parse_JsonData((uint8_t *)leftp);
+                }
             }
         }
     }
 
-    if (strstr((const char *)RecvBuf, "+MQTTDISCONNECTED"))
+    /* ML307 实际输出 MQTT_DISCONNECT / MQTT_CONNECT（无 + 前缀，分段到达） */
+    if (strstr((const char *)RecvBuf, "MQTT_DISCONNECT"))
         MQTT_Download_Flag = 0;
-    if (strstr((const char *)RecvBuf, "+MQTTCONNECTED"))
+    if (strstr((const char *)RecvBuf, "MQTT_CONNECT:"))
         MQTT_Download_Flag = 1;
 
     if (strstr((const char *)RecvBuf, (const char *)Parse_Substr))

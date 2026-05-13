@@ -10,7 +10,6 @@
 #include "bsp_iic.h"
 #include "bsp.h"
 #include "modbus_app.h"
-#include "oled.h"
 #include <stdio.h>
 
 static uint8_t print_cnt;
@@ -83,36 +82,11 @@ void SensorApp_Process(void)
     if (++print_cnt >= 4)
     {
         print_cnt = 0;
-
-        if (aht_ret == 0)
-        {
-            char line[22];
-            uint16_t temp10 = (uint16_t)((temp + 5U) / 10U);
-            uint16_t rh10 = (uint16_t)((rh + 5U) / 10U);
-            int len = snprintf(line, sizeof(line), "T=%u.%uC RH=%u.%u%%",
-                               temp10 / 10U, temp10 % 10U,
-                               rh10 / 10U, rh10 % 10U);
-            while (len < 21) line[len++] = ' ';
-            line[21] = '\0';
-            OLED_ShowStr(0, 0, line, 0);
-        }
-
-        {
-            char line[22];
-            int len;
-
-            len = snprintf(line, sizeof(line), "V=%d.%02dV I=%dmA",
-                           v3 / 100, v3 % 100, v4);
-            while (len < 21) line[len++] = ' ';
-            line[21] = '\0';
-            OLED_ShowStr(0, 2, line, 0);
-
-            len = snprintf(line, sizeof(line), "P=%dmW", v5);
-            while (len < 21) line[len++] = ' ';
-            line[21] = '\0';
-            OLED_ShowStr(0, 4, line, 0);
-
-            OLED_ShowStr(0, 6, "M+C+M v1.0           ", 0);
-        }
+        (void)aht_ret;
+        (void)temp;
+        (void)rh;
+        (void)v3;
+        (void)v4;
+        (void)v5;
     }
 }
