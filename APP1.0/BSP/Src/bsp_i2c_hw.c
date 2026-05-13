@@ -30,11 +30,12 @@ void I2C1_HW_Init(void)
 
 /* ---- flag wait helpers ---- */
 
-static uint8_t I2C1_WaitFlag(uint32_t flag, FunctionalState state, uint32_t timeout)
+/* 当前所有调用都只需要等待 flag 置位，因此不再传入 SET/RESET 枚举常量。 */
+static uint8_t I2C1_WaitFlagSet(uint32_t flag, uint32_t timeout)
 {
     while (timeout--)
     {
-        if (I2C_GetFlagStatus(I2C1, flag) == state)
+        if (I2C_GetFlagStatus(I2C1, flag) == SET)
             return 0;
     }
     return 1;
@@ -113,19 +114,19 @@ uint8_t I2C1_WriteBuf(uint8_t addr, uint8_t *buf, uint16_t len)
         return 1;
 
     I2C_Send7bitAddress(I2C1, addr, I2C_Direction_Transmitter);
-    if (I2C1_WaitFlag(I2C_FLAG_AF, SET, I2C_TIMEOUT) == 0)
+    if (I2C1_WaitFlagSet(I2C_FLAG_AF, I2C_TIMEOUT) == 0)
         goto err;
     if (I2C1_CheckEvent(I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED, I2C_TIMEOUT))
         goto err;
 
     for (i = 0; i < len; i++)
     {
-        if (I2C1_WaitFlag(I2C_FLAG_TXE, SET, I2C_TIMEOUT))
+        if (I2C1_WaitFlagSet(I2C_FLAG_TXE, I2C_TIMEOUT))
             goto err;
         I2C_SendData(I2C1, buf[i]);
     }
 
-    if (I2C1_WaitFlag(I2C_FLAG_BTF, SET, I2C_TIMEOUT))
+    if (I2C1_WaitFlagSet(I2C_FLAG_BTF, I2C_TIMEOUT))
         goto err;
 
     I2C_GenerateSTOP(I2C1, ENABLE);
@@ -156,7 +157,7 @@ uint8_t I2C1_ReadBuf(uint8_t addr, uint8_t *buf, uint16_t len)
         return 1;
 
     I2C_Send7bitAddress(I2C1, addr, I2C_Direction_Receiver);
-    if (I2C1_WaitFlag(I2C_FLAG_AF, SET, I2C_TIMEOUT) == 0)
+    if (I2C1_WaitFlagSet(I2C_FLAG_AF, I2C_TIMEOUT) == 0)
         goto err;
 
     /* ACK/NACK control before clearing ADDR */
@@ -166,7 +167,7 @@ uint8_t I2C1_ReadBuf(uint8_t addr, uint8_t *buf, uint16_t len)
         if (I2C1_CheckEvent(I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED, I2C_TIMEOUT))
             goto err;
         I2C_GenerateSTOP(I2C1, ENABLE);
-        if (I2C1_WaitFlag(I2C_FLAG_RXNE, SET, I2C_TIMEOUT))
+        if (I2C1_WaitFlagSet(I2C_FLAG_RXNE, I2C_TIMEOUT))
             goto err;
         buf[0] = I2C_ReceiveData(I2C1);
     }
@@ -177,7 +178,7 @@ uint8_t I2C1_ReadBuf(uint8_t addr, uint8_t *buf, uint16_t len)
         I2C1->CR1 |= I2C_CR1_POS;
         if (I2C1_CheckEvent(I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED, I2C_TIMEOUT))
             goto err;
-        if (I2C1_WaitFlag(I2C_FLAG_BTF, SET, I2C_TIMEOUT))
+        if (I2C1_WaitFlagSet(I2C_FLAG_BTF, I2C_TIMEOUT))
             goto err;
         I2C_GenerateSTOP(I2C1, ENABLE);
         buf[0] = I2C_ReceiveData(I2C1);
@@ -192,13 +193,13 @@ uint8_t I2C1_ReadBuf(uint8_t addr, uint8_t *buf, uint16_t len)
         /* Read bytes 0 .. len-4 */
         for (i = 0; i < len - 3; i++)
         {
-            if (I2C1_WaitFlag(I2C_FLAG_RXNE, SET, I2C_TIMEOUT))
+            if (I2C1_WaitFlagSet(I2C_FLAG_RXNE, I2C_TIMEOUT))
                 goto err;
             buf[i] = I2C_ReceiveData(I2C1);
         }
 
         /* Byte len-3: wait, then disable ACK + POS for last two */
-        if (I2C1_WaitFlag(I2C_FLAG_BTF, SET, I2C_TIMEOUT))
+        if (I2C1_WaitFlagSet(I2C_FLAG_BTF, I2C_TIMEOUT))
             goto err;
         I2C_AcknowledgeConfig(I2C1, DISABLE);
 
@@ -206,13 +207,13 @@ uint8_t I2C1_ReadBuf(uint8_t addr, uint8_t *buf, uint16_t len)
         buf[len - 3] = I2C_ReceiveData(I2C1);
 
         /* Byte len-2 */
-        if (I2C1_WaitFlag(I2C_FLAG_BTF, SET, I2C_TIMEOUT))
+        if (I2C1_WaitFlagSet(I2C_FLAG_BTF, I2C_TIMEOUT))
             goto err;
         I2C_GenerateSTOP(I2C1, ENABLE);
         buf[len - 2] = I2C_ReceiveData(I2C1);
 
         /* Byte len-1 */
-        if (I2C1_WaitFlag(I2C_FLAG_RXNE, SET, I2C_TIMEOUT))
+        if (I2C1_WaitFlagSet(I2C_FLAG_RXNE, I2C_TIMEOUT))
             goto err;
         buf[len - 1] = I2C_ReceiveData(I2C1);
     }
@@ -243,25 +244,25 @@ uint8_t I2C1_MemWrite(uint8_t addr, uint8_t reg, uint8_t *buf, uint16_t len)
         return 1;
 
     I2C_Send7bitAddress(I2C1, addr, I2C_Direction_Transmitter);
-    if (I2C1_WaitFlag(I2C_FLAG_AF, SET, I2C_TIMEOUT) == 0)
+    if (I2C1_WaitFlagSet(I2C_FLAG_AF, I2C_TIMEOUT) == 0)
         goto err;
     if (I2C1_CheckEvent(I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED, I2C_TIMEOUT))
         goto err;
 
     /* Send register address */
-    if (I2C1_WaitFlag(I2C_FLAG_TXE, SET, I2C_TIMEOUT))
+    if (I2C1_WaitFlagSet(I2C_FLAG_TXE, I2C_TIMEOUT))
         goto err;
     I2C_SendData(I2C1, reg);
 
     /* Send data */
     for (i = 0; i < len; i++)
     {
-        if (I2C1_WaitFlag(I2C_FLAG_TXE, SET, I2C_TIMEOUT))
+        if (I2C1_WaitFlagSet(I2C_FLAG_TXE, I2C_TIMEOUT))
             goto err;
         I2C_SendData(I2C1, buf[i]);
     }
 
-    if (I2C1_WaitFlag(I2C_FLAG_BTF, SET, I2C_TIMEOUT))
+    if (I2C1_WaitFlagSet(I2C_FLAG_BTF, I2C_TIMEOUT))
         goto err;
 
     I2C_GenerateSTOP(I2C1, ENABLE);
@@ -293,16 +294,16 @@ uint8_t I2C1_MemRead(uint8_t addr, uint8_t reg, uint8_t *buf, uint16_t len)
         return 1;
 
     I2C_Send7bitAddress(I2C1, addr, I2C_Direction_Transmitter);
-    if (I2C1_WaitFlag(I2C_FLAG_AF, SET, I2C_TIMEOUT) == 0)
+    if (I2C1_WaitFlagSet(I2C_FLAG_AF, I2C_TIMEOUT) == 0)
         goto err;
     if (I2C1_CheckEvent(I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED, I2C_TIMEOUT))
         goto err;
 
-    if (I2C1_WaitFlag(I2C_FLAG_TXE, SET, I2C_TIMEOUT))
+    if (I2C1_WaitFlagSet(I2C_FLAG_TXE, I2C_TIMEOUT))
         goto err;
     I2C_SendData(I2C1, reg);
 
-    if (I2C1_WaitFlag(I2C_FLAG_BTF, SET, I2C_TIMEOUT))
+    if (I2C1_WaitFlagSet(I2C_FLAG_BTF, I2C_TIMEOUT))
         goto err;
 
     /* Phase 2: repeated START + read */
@@ -311,7 +312,7 @@ uint8_t I2C1_MemRead(uint8_t addr, uint8_t reg, uint8_t *buf, uint16_t len)
         goto err;
 
     I2C_Send7bitAddress(I2C1, addr, I2C_Direction_Receiver);
-    if (I2C1_WaitFlag(I2C_FLAG_AF, SET, I2C_TIMEOUT) == 0)
+    if (I2C1_WaitFlagSet(I2C_FLAG_AF, I2C_TIMEOUT) == 0)
         goto err;
 
     if (len == 1)
@@ -320,7 +321,7 @@ uint8_t I2C1_MemRead(uint8_t addr, uint8_t reg, uint8_t *buf, uint16_t len)
         if (I2C1_CheckEvent(I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED, I2C_TIMEOUT))
             goto err;
         I2C_GenerateSTOP(I2C1, ENABLE);
-        if (I2C1_WaitFlag(I2C_FLAG_RXNE, SET, I2C_TIMEOUT))
+        if (I2C1_WaitFlagSet(I2C_FLAG_RXNE, I2C_TIMEOUT))
             goto err;
         buf[0] = I2C_ReceiveData(I2C1);
     }
@@ -330,7 +331,7 @@ uint8_t I2C1_MemRead(uint8_t addr, uint8_t reg, uint8_t *buf, uint16_t len)
         I2C1->CR1 |= I2C_CR1_POS;
         if (I2C1_CheckEvent(I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED, I2C_TIMEOUT))
             goto err;
-        if (I2C1_WaitFlag(I2C_FLAG_BTF, SET, I2C_TIMEOUT))
+        if (I2C1_WaitFlagSet(I2C_FLAG_BTF, I2C_TIMEOUT))
             goto err;
         I2C_GenerateSTOP(I2C1, ENABLE);
         buf[0] = I2C_ReceiveData(I2C1);
@@ -344,22 +345,22 @@ uint8_t I2C1_MemRead(uint8_t addr, uint8_t reg, uint8_t *buf, uint16_t len)
 
         for (i = 0; i < len - 3; i++)
         {
-            if (I2C1_WaitFlag(I2C_FLAG_RXNE, SET, I2C_TIMEOUT))
+            if (I2C1_WaitFlagSet(I2C_FLAG_RXNE, I2C_TIMEOUT))
                 goto err;
             buf[i] = I2C_ReceiveData(I2C1);
         }
 
-        if (I2C1_WaitFlag(I2C_FLAG_BTF, SET, I2C_TIMEOUT))
+        if (I2C1_WaitFlagSet(I2C_FLAG_BTF, I2C_TIMEOUT))
             goto err;
         I2C_AcknowledgeConfig(I2C1, DISABLE);
         buf[len - 3] = I2C_ReceiveData(I2C1);
 
-        if (I2C1_WaitFlag(I2C_FLAG_BTF, SET, I2C_TIMEOUT))
+        if (I2C1_WaitFlagSet(I2C_FLAG_BTF, I2C_TIMEOUT))
             goto err;
         I2C_GenerateSTOP(I2C1, ENABLE);
         buf[len - 2] = I2C_ReceiveData(I2C1);
 
-        if (I2C1_WaitFlag(I2C_FLAG_RXNE, SET, I2C_TIMEOUT))
+        if (I2C1_WaitFlagSet(I2C_FLAG_RXNE, I2C_TIMEOUT))
             goto err;
         buf[len - 1] = I2C_ReceiveData(I2C1);
     }

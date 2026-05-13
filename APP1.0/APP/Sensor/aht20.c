@@ -9,6 +9,7 @@
 #include "bsp.h"
 #include "delay.h"
 
+/* 只读 1 字节状态寄存器，用于判断忙状态和校准位。 */
 static uint8_t AHT20_Read_Status(uint8_t *status)
 {
     if (IIC_ReadBuf(AHT20_SLAVE_ADDRESS, status, 1))
@@ -16,6 +17,7 @@ static uint8_t AHT20_Read_Status(uint8_t *status)
     return 0;
 }
 
+/* 触发一次温湿度测量，器件随后会进入 busy 状态。 */
 static uint8_t AHT20_TrigMeasureCmd(void)
 {
     uint8_t cmd[3] = {0xAC, 0x33, 0x00};
@@ -40,7 +42,7 @@ uint8_t AHT20_Init(void)
 
     if (!(status & 0x08))
     {
-        /* 重新初始化 */
+        /* 若校准位未就绪，再补发一次初始化命令。 */
         if (IIC_WriteBuf(AHT20_SLAVE_ADDRESS, cmd, 3))
             return 1;
         Delay_ms(10);
@@ -77,9 +79,11 @@ uint8_t AHT20_Read(uint16_t *temp_centi, uint16_t *rh_centi)
     if (IIC_ReadBuf(AHT20_SLAVE_ADDRESS, buf, 6))
         return 4;
 
+    /* 湿度原始值占 20bit：buf[1..3] 的高 20 位。 */
     raw = ((uint32_t)buf[1] << 12) | ((uint32_t)buf[2] << 4) | ((uint32_t)buf[3] >> 4);
     *rh_centi = (uint16_t)((raw * 625UL) >> 16);      /* %RH * 100 */
 
+    /* 温度原始值占后 20bit，换算后单位为 摄氏度*100。 */
     raw = (((uint32_t)buf[3] & 0x0F) << 16) | ((uint32_t)buf[4] << 8) | buf[5];
     temp_calc = (int32_t)((raw * 625UL) >> 15) - 5000; /* degC * 100 */
     if (temp_calc < 0)

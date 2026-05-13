@@ -43,9 +43,4 @@ extern OTA_InfoCB OTA_Info;
 extern UpDataA_CB UpDataA;
 extern uint32_t BootStaFlag;
 
-/* Internal main loop handlers (defined in main.c) */
-void BootLoader_PollCommandFrame(void);
-void BootLoader_PollXmodemRequest(void);
-void BootLoader_UpdateAFromExternalFlash(void);
-
 #endif

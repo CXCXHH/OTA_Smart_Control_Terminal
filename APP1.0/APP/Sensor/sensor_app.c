@@ -10,10 +10,7 @@
 #include "bsp_iic.h"
 #include "bsp.h"
 #include "modbus_app.h"
-#include <stdio.h>
-
-static uint8_t print_cnt;
-
+/* 上电后扫一遍总线，只做存在性探测，不在这里做错误恢复。 */
 static void I2C_ScanOnce(void)
 {
     uint8_t ret;
@@ -34,7 +31,7 @@ void SensorApp_Init(void)
     ina_ret = INA226_Init();
     (void)aht_ret;
     (void)ina_ret;
-    /* small delay for sensor power-on settle before config reads */
+    /* 传感器刚上电时内部寄存器还在稳定，稍等再进入周期采样。 */
     for (volatile uint32_t d = 0; d < 500000; d++);
     U1_printf("Sensors OK\r\n");
 }
@@ -51,7 +48,6 @@ void SensorApp_Process(void)
     uint16_t temp, rh;
     uint16_t ina_bus, ina_current, ina_power;
     uint8_t aht_ret;
-    uint16_t v3, v4, v5;       /* local snapshots for display */
     uint16_t adc_voltage, adc_temp;
 
     aht_ret = AHT20_Read(&temp, &rh);
@@ -73,20 +69,5 @@ void SensorApp_Process(void)
     REG_HOLD_BUF[REG_IDX_DEV_POWER] = (uint16_t)((ina_power * 5UL) / 2UL);
     REG_HOLD_BUF[REG_IDX_SYS_VOLT] = adc_voltage;
     REG_HOLD_BUF[REG_IDX_CPU_TEMP] = adc_temp;
-    /* snapshot for non-critical display (avoid long lock for OLED/printf) */
-    v3 = REG_HOLD_BUF[REG_IDX_DEV_VOLT];
-    v4 = REG_HOLD_BUF[REG_IDX_DEV_CURR];
-    v5 = REG_HOLD_BUF[REG_IDX_DEV_POWER];
     REG_Unlock();
-
-    if (++print_cnt >= 4)
-    {
-        print_cnt = 0;
-        (void)aht_ret;
-        (void)temp;
-        (void)rh;
-        (void)v3;
-        (void)v4;
-        (void)v5;
-    }
 }

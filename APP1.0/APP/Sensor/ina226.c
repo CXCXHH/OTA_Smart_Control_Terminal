@@ -10,11 +10,13 @@
 
 static uint8_t INA226_LastError;
 
+/* 最近一次 I2C 访问失败原因，便于上层定位是地址/ACK 还是读写阶段失败。 */
 uint8_t INA226_GetLastError(void)
 {
     return INA226_LastError;
 }
 
+/* INA226 寄存器按大端格式传输，先发高字节再发低字节。 */
 uint8_t INA226_WriteReg(uint8_t reg, uint16_t value)
 {
     uint8_t buf[2];
@@ -30,6 +32,12 @@ uint8_t INA226_WriteReg(uint8_t reg, uint16_t value)
     return 0;
 }
 
+/*
+ * INA226 寄存器读分两步：
+ * 1. 先写寄存器地址
+ * 2. 再读 2 字节数据
+ * 某些时刻器件可能还在转换，给 3 次重试避免偶发 NACK。
+ */
 static uint16_t INA226_ReadReg(uint8_t reg)
 {
     uint8_t buf[2];
@@ -55,6 +63,7 @@ static uint16_t INA226_ReadReg(uint8_t reg)
     return 0;
 }
 
+/* 初始化顺序必须是：先配置，再写校准寄存器，最后回读确认。 */
 uint8_t INA226_Init(void)
 {
     if (INA226_WriteReg(CONFIG_REGISTER, CONFIG_REGISTER_INIT))
@@ -68,16 +77,19 @@ uint8_t INA226_Init(void)
     return 0;
 }
 
+/* 总线电压寄存器原始单位 1.25mV/LSB，换算在 sensor_app.c 中完成。 */
 uint16_t INA226_Read_BusVoltage(void)
 {
     return INA226_ReadReg(BUS_VOLTAGE_REGISTER);
 }
 
+/* 电流寄存器缩放依赖校准值，当前工程使用 0.1mA/LSB。 */
 uint16_t INA226_Read_Current(void)
 {
     return INA226_ReadReg(CURRENT_REGISTER);
 }
 
+/* 功率寄存器原始值同样依赖校准值，实际换算在 sensor_app.c 中完成。 */
 uint16_t INA226_Read_Power(void)
 {
     return INA226_ReadReg(POWER_REGISTER);

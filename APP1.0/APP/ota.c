@@ -25,6 +25,14 @@
 /* 从扩展区域读取 fw_crc32 + fw_size 的偏移 */
 #define OTA_EE_CRC_OFF      (OTA_EE_EXT_ADDR + 8U)   /* offset 88 */
 
+/* APP 固件在 Flash 中的基址与大小 (Bootloader 写入分区) */
+#define APP_FLASH_BASE      0x08005000UL
+#define APP_FLASH_SIZE      0x0000B000UL
+#define APP_FLASH_WORDS     (APP_FLASH_SIZE / 4UL)
+
+/* 回退标记值 (写入 ota_flag 通知 Bootloader 回滚) */
+#define OTA_ROLLBACK_FLAG   0xDDEEFF00UL
+
 void OTA_CheckAndRollback(void)
 {
     uint8_t  page[16];
@@ -45,8 +53,8 @@ void OTA_CheckAndRollback(void)
     RCC_AHBPeriphClockCmd(RCC_AHBPeriph_CRC, ENABLE);
     CRC_ResetDR();
 
-    uint32_t *p = (uint32_t *)0x08005000UL;
-    uint32_t words = 0x0000B000UL / 4UL;
+    uint32_t *p = (uint32_t *)APP_FLASH_BASE;
+    uint32_t words = APP_FLASH_WORDS;
     for (uint32_t i = 0; i < words; i++)
         CRC->DR = p[i];
 
@@ -64,7 +72,7 @@ void OTA_CheckAndRollback(void)
     } else {
         U1_printf("CRC FAIL\r\n");
         /* 设置回退标记 */
-        ota_flag = 0xDDEEFF00UL;
+        ota_flag = OTA_ROLLBACK_FLAG;
         memcpy(page, &ota_flag, 4);
         AT24C02_WritePage(0, page);
         Delay_ms(5);

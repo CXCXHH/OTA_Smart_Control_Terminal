@@ -16,8 +16,8 @@ volatile uint8_t WIFI4G_CMD_Status = 0;
 uint8_t Parse_Substr[32] = {0};
 FIFO_t UART3_FIFO;
 
-#define NSize 512
-static uint8_t RecvBuf[NSize];
+#define WIFI4G_RECV_BUF_SIZE  512
+static uint8_t RecvBuf[WIFI4G_RECV_BUF_SIZE];
 static uint8_t OtaHeader[96];
 static uint16_t OtaHeaderLen;
 static uint16_t OtaPayloadLen;
@@ -36,6 +36,25 @@ void OTA_ClearAccum(void)
 static uint8_t  RPC_Pending    = 0;
 static uint32_t RPC_RequestId  = 0;
 
+/* 设置本轮 AT 响应匹配串，并清空上一轮命令的状态。 */
+static void WIFI4G_PrepareMatch(const char *match)
+{
+    strncpy((char *)Parse_Substr, match, sizeof(Parse_Substr) - 1U);
+    Parse_Substr[sizeof(Parse_Substr) - 1U] = '\0';
+    WIFI4G_CMD_Status = WIFI4G_NOT;
+}
+
+/* 常用同步 AT 交互：发送命令后阻塞等待目标响应。 */
+static uint8_t WIFI4G_SendCmdAndWait(const char *cmd,
+                                     const char *match,
+                                     uint32_t timeout_ms)
+{
+    WIFI4G_PrepareMatch(match);
+    Usart3_SendBuf((uint8_t *)cmd, strlen(cmd));
+    return Test_WIFI4G_CMD_Status(timeout_ms);
+}
+
+/* 在原始串口缓冲区中查找 ASCII 子串，不依赖字符串结尾。 */
 static char *FindAsciiInBuf(const uint8_t *buf, uint16_t len, const char *pat)
 {
     uint16_t i;
@@ -56,6 +75,11 @@ static char *FindAsciiInBuf(const uint8_t *buf, uint16_t len, const char *pat)
     return NULL;
 }
 
+/*
+ * OTA chunk 负载按字节流到达时，逐字节装入 OTA_Info.recv_buf。
+ * 这里依赖 `mqtt.h` 中的 OTA_Info 结构体成员 `recv_buf/recv_flag`，
+ * 真正的固件写入和 CRC 校验在 mqtt.c 的 OTA 流程中完成。
+ */
 static void OTA_ConsumePayloadByte(uint8_t c)
 {
     if (OtaPayloadReceived < sizeof(OTA_Info.recv_buf))
@@ -72,6 +96,11 @@ static void OTA_ConsumePayloadByte(uint8_t c)
     }
 }
 
+/*
+ * 解析 ML307 下发的固件块串流。
+ * 由于 topic 头和 payload 可能被拆成多段到达，这里先累积报文头，
+ * 识别出 `v2/fw/response/<req>/chunk/<id>,<len>,` 后再切到纯 payload 接收态。
+ */
 static void OTA_ParseChunkStream(const uint8_t *buf, uint16_t len)
 {
     char prefix[64];
@@ -170,7 +199,7 @@ uint8_t WIFI4G_Parse_Queue(void)
     while (FIFO_Pop(&UART3_FIFO, &c))
     {
         RecvBuf[i++] = c;
-        if (i >= NSize - 1) break;
+        if (i >= WIFI4G_RECV_BUF_SIZE - 1) break;
     }
     RecvBuf[i] = '\0';
 
@@ -206,6 +235,7 @@ uint8_t WIFI4G_Parse_Queue(void)
             if ((leftp != NULL) && (rightp != NULL) && (rightp >= leftp)) {
                 *++rightp = '\0';
 
+                /* attributes 走 OTA 元数据入口；RPC/普通 JSON 分别走各自解析路径。 */
                 if (strstr((char *)RecvBuf, "v1/devices/me/attributes") != NULL) {
                     MQTT_Parse_OTAData((uint8_t *)leftp);
                 } else if (RPC_Pending) {
@@ -245,36 +275,25 @@ uint8_t WIFI4G_Parse_Queue(void)
   */
 uint8_t ESP8266_Connect_WIFI(void)
 {
-    uint8_t buf[64];
     uint8_t ret;
 
-    strcpy((char *)Parse_Substr, "OK\r\n");
-    WIFI4G_CMD_Status = WIFI4G_NOT;
-    strcpy((char *)buf, "AT+CWMODE=1\r\n");
-    Usart3_SendBuf(buf, strlen((char *)buf));
-    if (Test_WIFI4G_CMD_Status(1000) == WIFI4G_ERROR) return 0;
+    if (WIFI4G_SendCmdAndWait("AT+CWMODE=1\r\n", "OK\r\n", 1000) == WIFI4G_ERROR)
+        return 0;
 
-    strcpy((char *)buf, "AT+CWJAP\r\n");
-    strcpy((char *)Parse_Substr, "OK\r\n");
-    WIFI4G_CMD_Status = WIFI4G_NOT;
-    Usart3_SendBuf(buf, strlen((char *)buf));
-    ret = Test_WIFI4G_CMD_Status(20000);
+    /* 先检查是否已经连过 AP，避免每次启动都重新配网。 */
+    ret = WIFI4G_SendCmdAndWait("AT+CWJAP\r\n", "OK\r\n", 20000);
     if (ret == WIFI4G_OK) return 1;
 
     if (ret == WIFI4G_NOT) return 0;
 
     /* WiFi 连接失败，尝试 SmartConfig */
-    strcpy((char *)Parse_Substr, "smartconfig connected wifi\r\n");
-    WIFI4G_CMD_Status = WIFI4G_NOT;
-    strcpy((char *)buf, "AT+CWSTARTSMART=3,3\r\n");
-    Usart3_SendBuf(buf, strlen((char *)buf));
-    ret = Test_WIFI4G_CMD_Status(200000);
+    ret = WIFI4G_SendCmdAndWait("AT+CWSTARTSMART=3,3\r\n",
+                                "smartconfig connected wifi\r\n",
+                                200000);
     if (ret == WIFI4G_OK)
     {
-        strcpy((char *)Parse_Substr, "OK\r\n");
-        strcpy((char *)buf, "AT+CWSTOPSMART\r\n");
-        Usart3_SendBuf(buf, strlen((char *)buf));
-        if (Test_WIFI4G_CMD_Status(1000) == WIFI4G_ERROR) return 0;
+        if (WIFI4G_SendCmdAndWait("AT+CWSTOPSMART\r\n", "OK\r\n", 1000) == WIFI4G_ERROR)
+            return 0;
         return 1;
     }
     return 0;

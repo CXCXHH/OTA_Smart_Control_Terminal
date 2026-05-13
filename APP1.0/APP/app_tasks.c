@@ -69,14 +69,10 @@ static void MQTTTask(void *pvParameters)
 
     FIFO_Init(&UART3_FIFO);
 
-    if (ESP8266_Connect_WIFI())
-        ;
-    else
+    if (!ESP8266_Connect_WIFI())
         U1_printf("WiFi FAIL\r\n");
 
-    if (MQTT_Connect_Server())
-        ;
-    else
+    if (!MQTT_Connect_Server())
         U1_printf("MQTT FAIL\r\n");
 
     last_tx_tick = xTaskGetTickCount();

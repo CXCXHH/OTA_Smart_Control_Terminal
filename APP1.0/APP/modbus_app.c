@@ -13,8 +13,6 @@ volatile uint8_t Modify_SlaveAdress_Flag = 0;
 #define REG_COILS_SIZE  10
 static uint8_t REG_COILS_BUF[REG_COILS_SIZE];
 
-static uint8_t ucSlaveAddr;
-
 /* FreeRTOS mutex for shared register access */
 static SemaphoreHandle_t xRegMutex = NULL;
 
@@ -154,8 +152,7 @@ eMBErrorCode eMBRegHoldingCB(UCHAR *pucRegBuffer, USHORT usAddress,
   */
 void Modbus_Init(uint8_t slave_addr)
 {
-    ucSlaveAddr = slave_addr;
-    eMBInit(MB_RTU, ucSlaveAddr, 0, 115200, MB_PAR_NONE);
+    eMBInit(MB_RTU, slave_addr, 0, 115200, MB_PAR_NONE);
     eMBEnable();
 }
 
@@ -185,7 +182,7 @@ void App_Output_RefreshFromSharedRegs(void)
     uint8_t coil0, coil1, coil2, coil3;
     uint16_t hold0;
 
-    /* Snapshot shared registers under lock, then release before GPIO */
+    /* 先拿一次共享寄存器快照，再在锁外刷新 GPIO，避免把输出路径锁太久。 */
     REG_Lock();
     coil0 = REG_COILS_BUF[0];
     coil1 = REG_COILS_BUF[1];

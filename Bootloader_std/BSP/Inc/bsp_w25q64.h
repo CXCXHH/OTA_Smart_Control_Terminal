@@ -5,6 +5,7 @@
 
 /* W25Q64 容量 */
 #define W25Q64_FLASH_SIZE		0x800000  /* 8MB */
+#define W25Q64_BLOCK_SIZE		(64 * 1024) /* 64KB/block (BlockErase64K 擦除单位) */
 #define W25Q64_SECTOR_SIZE		4096      /* 4KB/sector */
 #define W25Q64_PAGE_SIZE		256       /* 256B/page */
 

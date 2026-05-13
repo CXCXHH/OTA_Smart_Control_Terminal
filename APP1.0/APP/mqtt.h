@@ -39,7 +39,6 @@ uint8_t MQTT_Parse_DeviceData(uint8_t *json, uint32_t request_id);
 
 /* OTA 解析入口（由 wifi4g 解析层调用） */
 uint8_t MQTT_Parse_OTAData(uint8_t *json);
-void    MQTT_HandleChunkResponse(uint8_t *buf, uint16_t len);
 void    MQTT_OTA_Process(void);
 
 #endif
